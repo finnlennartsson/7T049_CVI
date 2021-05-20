@@ -39,40 +39,38 @@ def infotodict(seqinfo):
         
         # ANATOMY
         # T1w
-        if ('T1w_acq-mp2rage_0p7' in s.series_description):
+        if ('T1w_acq-mp2rage' in s.series_description):
             info[t1w].append(s.series_id) # assign if a single series meets criteria
             
             
         # FIELDMAP/s
         # gre-fieldmap
-        if ('gre_field_mapping_3mm' in s.series_description) and (s.image_type[2] == 'M') and ('NORM' in s.image_type):
+        if ('NOT YET SORTED' in s.series_description) and (s.image_type[2] == 'M') and ('NORM' in s.image_type):
             # magnitude image
             info[fmap_gre_ap_mag].append(s.series_id) #     
-        if ('gre_field_mapping_3mm' in s.series_description) and (s.image_type[2] == 'P'):
+        if ('NOT YET SORTED' in s.series_description) and (s.image_type[2] == 'P'):
             # phase image
             info[fmap_gre_ap_phase].append(s.series_id) #
             
         # se-fieldmap
-        if ('ep2d_se_phase_PA_2meas' in s.series_description):
-            info[fmap_se_pa].append(s.series_id) # assign if a single series meets criteria
-        if ('ep2d_se_phase_AP_2meas' in s.series_description):
+        if ('fmap_acq-se_dir-AP' in s.series_description):
             info[fmap_se_ap].append(s.series_id) # assign if a single series meets criteria
+        if ('fmap_acq-se_dir-PA' in s.series_description):
+            info[fmap_se_pa].append(s.series_id) # assign if a single series meets criteria
         
-        
-        # Resting-state fMRI
-        # include is_derived = FALSE as additional criteria
-        if ('ep2d_bold_moco_p4_3mm_AP_2170' in s.series_description) and not (s.is_derived):
-            info[rest_ap].append(s.series_id) # assign if a single series meets criteria
+        # pRF fMRI - run with 8bars stimulus
+        if ('fmri_8bars_dir-AP_MB2' in s.series_description):
+            info[fmri_8bars].append(s.series_id) # assign if a single series meets criteria
         
         
         # DIFFUSION
         # dir AP
         # include is_derived = FALSE as additional criteria
-        if ('ep2d_diff_b2600_iso2p3_phase_AP_43dir' in s.series_description) and not (s.is_derived):
+        if ('NOT YET SORTED' in s.series_description) and not (s.is_derived):
             info[dwi_ap].append(s.series_id) # append if multiple series meet criteria
         # dir PA
         # include is_derived = FALSE as additional criteria
-        if ('ep2d_diff_b2600_iso2p3_phase_PA_42dir' in s.series_description) and not (s.is_derived):
+        if ('NOT YET SORTED' in s.series_description) and not (s.is_derived):
             info[dwi_pa].append(s.series_id) # append if multiple series meet criteria 
             
             
