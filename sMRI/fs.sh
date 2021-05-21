@@ -48,6 +48,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ ! -d $logdir ]; then mkdir -p $logdir; fi
+if [ ! -d $fsdatadir ]; then mkdir -p $fsdatadir; fi
 
 # System specific #
 # (These are the same for all studies/subjects):
