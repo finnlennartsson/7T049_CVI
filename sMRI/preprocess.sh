@@ -76,7 +76,7 @@ fi
 if [ ! -d $fsdatadir/sub-$sID/preproc ]; then mkdir -p $fsdatadir/sub-$sID/preproc ;fi
 
 t1base=`basename $t1 .nii.gz`
-t1mp2ragebase=`echo $t1base | sed 's/T1w/\_desc\-mp2rage\_T1w/g'`
+t1mp2ragebase=`echo $t1base | sed 's/T1w/desc\-mp2rage\_T1w/g'`
 
 # Extract the two volumes (mr2rage and t1)
 mrconvert $t1 -coord 3 0 -axes 0,1,2 $fsdatadir/sub-$sID/preproc/${t1base}_tmp_mp2rage.nii.gz;
