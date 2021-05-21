@@ -17,6 +17,10 @@ def infotodict(seqinfo):
     """
 
     # ANATOMY
+    # 7T anatomy is run with the MP2RAGE sequence
+    # The MP2RAGE image is reconstructed on the scanner and exported as seperat DICOM-image (see below for identifier)
+    t1mp2rage= create_key('sub-{subject}/anat/sub-{subject}_acq-mp2rage_run-{item:01d}_T1w')
+    # and toghether we can get 4D image which has a T1w (PD-like contrast)
     t1w = create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_T1w')
     
     # DWI
@@ -33,7 +37,7 @@ def infotodict(seqinfo):
     #fmap_gre_ap_mag = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_magnitude')
     #fmap_gre_ap_phase = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_phasediff')
     
-    info = {t1w: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap: []}
+    info = {t1w: [], t1wmp2rage: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap: []}
     
     for idx, s in enumerate(seqinfo):
         
@@ -42,6 +46,8 @@ def infotodict(seqinfo):
         # T1w
         if ('T1w_acq-mp2rage' in s.series_description):
             info[t1w].append(s.series_id) # assign if a single series meets criteria
+        if ('WIP' in s.series_description):
+            info[t1wmp2rage].append(s.series_id) # assign if a single series meets criteria
             
             
         # FIELDMAP/s
