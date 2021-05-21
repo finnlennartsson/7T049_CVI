@@ -29,10 +29,11 @@ def infotodict(seqinfo):
     # FIELDMAP/s
     fmap_se_ap = create_key('sub-{subject}/fmap/sub-{subject}_acq-se_dir-AP_run-{item:01d}_epi')
     fmap_se_pa = create_key('sub-{subject}/fmap/sub-{subject}_acq-se_dir-PA_run-{item:01d}_epi')
-    fmap_gre_ap_mag = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_magnitude')
-    fmap_gre_ap_phase = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_phasediff')
+    fmap_gre_ap = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_epi')
+    #fmap_gre_ap_mag = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_magnitude')
+    #fmap_gre_ap_phase = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_phasediff')
     
-    info = {t1w: [], dwi_ap: [], dwi_pa: [], rest_ap: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap_mag: [], fmap_gre_ap_phase: []}
+    info = {t1w: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap: []}
     
     for idx, s in enumerate(seqinfo):
         
@@ -45,6 +46,9 @@ def infotodict(seqinfo):
             
         # FIELDMAP/s
         # gre-fieldmap
+        if ('fmap_acq-B0mapShimmed' in s.series_description):
+            # magnitude image
+            info[fmap_gre_ap].append(s.series_id)
         if ('NOT YET SORTED' in s.series_description) and (s.image_type[2] == 'M') and ('NORM' in s.image_type):
             # magnitude image
             info[fmap_gre_ap_mag].append(s.series_id) #     
