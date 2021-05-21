@@ -6,11 +6,13 @@ usage()
   base=$(basename "$0")
   echo "usage: $base sID [options]
 Running FreeSurfer of sMRI data
+1. Preprocess 4D MP2RAGE into correct 3D MP2RAGE (normalised)
+2. FreeSurfer analysis
 
 Arguments:
   sID				Subject ID (e.g. 107) 
 Options:
-  -T1				T1w image to be preprocessed and segmented. Full path. (default: $rawdatadir/sub-$sID/anat/sub-$sID_run-1_T1w.nii.gz)
+  -T1				T1w MP2RAGE image to be preprocessed and segmented. NOTE includes MP2RAGE + PD. (default: $rawdatadir/sub-$sID/anat/sub-$sID_run-1_T1w.nii.gz)
   -threads			Nbr of CPU cores/threads for FreeSurfer analysis. (default: threads=10)  
   -h / -help / --help           Print usage.
 "
@@ -32,13 +34,13 @@ scriptname=`basename $0 .sh`
 logdir=derivatives/logs/sub-${sID}
 
 # Defaults
-t1w=$rawdatadir/sub-$sID/anat/sub-${sID}_run-1_T1w.nii.gz
+t1=$rawdatadir/sub-$sID/anat/sub-${sID}_run-1_T1w.nii.gz
 threads=10;
 
 shift
 while [ $# -gt 0 ]; do
     case "$1" in
-	-T1) shift; t1w=$1; ;;
+	-T1) shift; t1=$1; ;;
 	-threads) shift; threads=$1; ;;
 	-h|-help|--help) usage; ;;
 	-*) echo "$0: Unrecognized option $1" >&2; usage; ;;
@@ -65,8 +67,30 @@ fi
     exit 1
 }
 
-##### MAIN #####
+################ MAIN ################
 
-# Perform FreeSurfer segmentation/analysis
 
-recon-all -subjid sub-$sID -i $t1w -sd $fsdatadir -threads 10 -all
+################################################
+## 1. Make proper 3D MP2RAGE image
+
+if [ -d $fsdatadir/sub-$sID/preproc]; then mkdir -p $fsdatadir/sub-$sID/preproc ;fi
+
+t1base=`basename $t1 .nii.gz`
+t1mp2ragebase=`echo $t1base | sed 's/T1w/\_desc\-mp2rage\_T1w/g'`
+
+# Extract the two volumes (mr2rage and t1)
+mrconvert $t1 -coord 3 0 -axes 0,1,2 $fsdatadir/sub-$sID/preproc/${t1base}_tmp_mp2rage.nii.gz;
+mrconvert $t1 -coord 3 1 -axes 0,1,2 $fsdatadir/sub-$sID/preproc/${t1base}_tmp_t1.nii.gz;
+# and divide them / normalise
+mrcalc $fsdatadir/sub-$sID/preproc/${t1base}_tmp_mp2rage.nii.gz $fsdatadir/sub-$sID/preproc/${t1base}_tmp_t1.nii.gz -div $fsdatadir/sub-$sID/preproc/$t1mp2ragebase.nii.gz
+
+# clean up
+rm $fsdatadir/sub-$sID/preproc/${t1base}_tmp_*.nii.gz
+
+
+################################################
+## 2.  Perform FreeSurfer segmentation/analysis
+
+recon-all -subjid sub-$sID -i $fsdatadir/sub-$sID/preproc/$t1mp2ragebase.nii.gz -sd $fsdatadir -threads $threads -all
+
+################ FINISHED ################
