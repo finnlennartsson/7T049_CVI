@@ -5,20 +5,21 @@ usage()
 {
   base=$(basename "$0")
   echo "usage: $base sID [options]
-Conversion of DCMs in /sourcedata into NIfTIs in /rawdata
-1. NIfTI-conversion to BIDS-compliant /rawdata folder
-2. validation of BIDS dataset
-3. Run of MRIQC on structural data
+Running FreeSurfer of sMRI data
 
 Arguments:
   sID				Subject ID (e.g. 107) 
 Options:
+  -T1				T1w image to be preprocessed and segmented (default: $studydir/rawdata/sub-$sID/anat/sub-$sID_run-1_T1w.nii.gz)
   -h / -help / --help           Print usage.
 "
   exit;
 }
 
 ################ ARGUMENTS ################
+
+# Defaults
+
 
 [ $# -ge 1 ] || { usage; }
 command=$@
@@ -36,9 +37,9 @@ done
 
 # Define Folders
 codedir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-studydir=`pwd` #studydir=`dirname -- "$codedir"`
-rawdatadir=$studydir/rawdata;
-sourcedatadir=$studydir/sourcedata;
+studydir=`pwd`
+smridir=$studydir/derivatives/sMRI/sub-$sID;
+rawdatadir=$studydir/rawdata/sub-$sID/anat;
 scriptname=`basename $0 .sh`
 logdir=$studydir/derivatives/logs/sub-${sID}
 
