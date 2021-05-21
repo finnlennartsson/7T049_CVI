@@ -73,7 +73,7 @@ fi
 ################################################
 ## 1. Make proper 3D MP2RAGE image
 
-if [ -d $fsdatadir/sub-$sID/preproc ]; then mkdir -p $fsdatadir/sub-$sID/preproc ;fi
+if [ ! -d $fsdatadir/sub-$sID/preproc ]; then mkdir -p $fsdatadir/sub-$sID/preproc ;fi
 
 t1base=`basename $t1 .nii.gz`
 t1mp2ragebase=`echo $t1base | sed 's/T1w/\_desc\-mp2rage\_T1w/g'`
