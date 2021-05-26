@@ -10,7 +10,7 @@ To complete the conversion:
 1. Run script `DcmDicomdir_to_DcmSourcedata.sh` \
 This re-names the dicoms and sorts them into `/sourcedata`
 
-2. Run script `DcmSourcedata_to_NiftiRawdata.sh` \
+2. Run script `DcmSourcedata_to_NiftiRawdata_generate_Dicominfo.sh` \
 Runs heudiconv without conversion
 Generates /rawdata/.heudiconv/sub-$sID/dicominfo.tsv which is used to generate 7T049_CVI_heuristic.py
 
