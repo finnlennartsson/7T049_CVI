@@ -18,11 +18,27 @@ def infotodict(seqinfo):
 
     # ANATOMY
     # 7T anatomy is run with the MP2RAGE sequence
-    # The MP2RAGE image is reconstructed on the scanner and exported as seperat DICOM-image (see below for identifier)
-    t1mp2rage= create_key('sub-{subject}/anat/sub-{subject}_acq-mp2rage_run-{item:01d}_T1w')
+    # See https://portal.research.lu.se/portal/files/79469556/ASL_2020_1_Helms_version3.pdf
+    # Raw data output are 3 images
+    # 1) 4D image: mag inv 1 and inv2
+    # 2) 4D image: real images with phase 1 and phase 2
+    # 3) 4D image: imag images with phase 1 and phase 2
+    # Optional output is reconstructed MP2RAGE T1w image
+    # 4) 3D image: mag MP2RAGE T1w image (not salt-n-peppar noise in non-brain => hard for skull-stripping!)
+    # The BIDS convention includes, which is "Siemens-based" with _inv-
+    #sub-<label>[_ses-<label>][_acq-<label>][_ce-<label>][_rec-<label>][_run-<index>][_echo-<index>][_flip-<index>]_inv-<index>[_part-<label>]_MP2RAGE.json
+    #sub-<label>[_ses-<label>][_acq-<label>][_ce-<label>][_rec-<label>][_run-<index>][_echo-<index>][_flip-<index>]_inv-<index>[_part-<label>]_MP2RAGE.nii[.gz]
+
+    # The MP2RAGE image is reconstructed on the scanner and exported as seperat DICOM-image (see below for identifiers)
+    t1wmp2rage_real= create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_inv-1and2_part-real_MP2RAGE')
+    t1wmp2rage_imag= create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_inv-1and2_part-imag_MP2RAGE')
     # and toghether we can get 4D image which has a T1w (PD-like contrast)
-    t1w = create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_T1w')
-    
+    t1wmp2rage_mag= create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_inv-1and2_MP2RAGE'
+    # Create "T1w" label for now
+    t1wmp2rage_mp2rage= create_key('sub-{subject}/anat/sub-{subject}_acq-mp2rage_run-{item:01d}_T1w')
+
+                              
+    # MP2RAGE in BIDS                             
     # DWI
     dwi_ap = create_key('sub-{subject}/dwi/sub-{subject}_dir-AP_run-{item:01d}_dwi')
     dwi_pa = create_key('sub-{subject}/dwi/sub-{subject}_dir-PA_run-{item:01d}_dwi')
@@ -37,18 +53,21 @@ def infotodict(seqinfo):
     #fmap_gre_ap_mag = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_magnitude')
     #fmap_gre_ap_phase = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_phasediff')
     
-    info = {t1w: [], t1wmp2rage: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap: []}
+    info = {t1w: [], t1wmp2rage_real: [],t1wmp2rage_imag: [],t1wmp2rage_inv: [],t1wmp2rage_mp2rage: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap: []}
     
     for idx, s in enumerate(seqinfo):
         
         
         # ANATOMY
-        # T1w
+        # T1w - MP2RAGE
+        if ('_real' in s.series_description):
+            info[t1wmp2rage_real].append(s.series_id) # assign if a single series meets criteria
+        if ('_imag' in s.series_description):
+            info[t1wmp2rage_imag].append(s.series_id) # assign if a single series meets criteria
+        if ('WIP-imag' in s.series_description):
+            info[t1wmp2rage_mp2rage].append(s.series_id) # assign if a single series meets criteria
         if ('T1w_acq-mp2rage' in s.series_description):
-            info[t1w].append(s.series_id) # assign if a single series meets criteria
-        if ('WIP' in s.series_description):
-            info[t1wmp2rage].append(s.series_id) # assign if a single series meets criteria
-            
+            info[t1wmprage_inv].append(s.series_id) # assign if a single series meets criteria            
             
         # FIELDMAP/s
         # gre-fieldmap
