@@ -67,7 +67,7 @@ def infotodict(seqinfo):
         if ('WIP-imag' in s.series_description):
             info[t1wmp2rage_mp2rage].append(s.series_id) # assign if a single series meets criteria
         if ('T1w_acq-mp2rage' in s.series_description):
-            info[t1wmprage_inv].append(s.series_id) # assign if a single series meets criteria            
+            info[t1wmp2rage_inv].append(s.series_id) # assign if a single series meets criteria            
             
         # FIELDMAP/s
         # gre-fieldmap
