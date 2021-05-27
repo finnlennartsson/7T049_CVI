@@ -30,12 +30,12 @@ def infotodict(seqinfo):
     #sub-<label>[_ses-<label>][_acq-<label>][_ce-<label>][_rec-<label>][_run-<index>][_echo-<index>][_flip-<index>]_inv-<index>[_part-<label>]_MP2RAGE.nii[.gz]
 
     # The MP2RAGE image is reconstructed on the scanner and exported as seperat DICOM-image (see below for identifiers)
-    t1wmp2rage_real= create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_inv-1and2_part-real_MP2RAGE')
-    t1wmp2rage_imag= create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_inv-1and2_part-imag_MP2RAGE')
+    t1wmp2rage_real = create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_inv-1and2_part-real_MP2RAGE')
+    t1wmp2rage_imag = create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_inv-1and2_part-imag_MP2RAGE')
     # and toghether we can get 4D image which has a T1w (PD-like contrast)
-    t1wmp2rage_mag= create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_inv-1and2_MP2RAGE'
+    t1wmp2rage_mag = create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_inv-1and2_MP2RAGE'
     # Create "T1w" label for now
-    t1wmp2rage_mp2rage= create_key('sub-{subject}/anat/sub-{subject}_acq-mp2rage_run-{item:01d}_T1w')
+    t1wmp2rage_mp2rage = create_key('sub-{subject}/anat/sub-{subject}_acq-mp2rage_run-{item:01d}_T1w')
 
                               
     # MP2RAGE in BIDS                             
