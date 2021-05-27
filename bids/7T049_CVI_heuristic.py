@@ -53,7 +53,7 @@ def infotodict(seqinfo):
     #fmap_gre_ap_mag = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_magnitude')
     #fmap_gre_ap_phase = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_phasediff')
     
-    info = {t1w: [], t1wmp2rage_real: [],t1wmp2rage_imag: [],t1wmp2rage_inv: [],t1wmp2rage_mp2rage: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap: []}
+    info = {t1wmp2rage_real: [],t1wmp2rage_imag: [],t1wmp2rage_inv: [],t1wmp2rage_mp2rage: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap: []}
     
     for idx, s in enumerate(seqinfo):
         
