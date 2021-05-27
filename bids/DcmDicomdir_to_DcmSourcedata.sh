@@ -39,7 +39,7 @@ origdcmdir=$studydir/dicomdir;
 dcmdir=$studydir/sourcedata
 scriptname=`basename $0 .sh`
 
-logdir=$studydir/derivatives/logs/bids/sub-${sID}
+logdir=$studydir/derivatives/logs/sub-${sID}
 if [ ! -d $logdir ]; then mkdir -p $logdir; fi
 
 ################ PROCESSING ################
