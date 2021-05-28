@@ -60,11 +60,11 @@ def infotodict(seqinfo):
         
         # ANATOMY
         # T1w - MP2RAGE
-        if ('_real' in s.series_description):
+        if ('real' in s.series_description) and not (s.is_derived):
             info[t1wmp2rage_real].append(s.series_id) # assign if a single series meets criteria
-        if ('_imag' in s.series_description):
+        if ('imag' in s.series_description) and not (s.is_derived):
             info[t1wmp2rage_imag].append(s.series_id) # assign if a single series meets criteria
-        if ('WIP-imag' in s.series_description):
+        if ('WIP-imag' in s.series_description) and (s.is_derived):
             info[t1wmp2rage_mp2rage].append(s.series_id) # assign if a single series meets criteria
         if ('T1w_acq-mp2rage' in s.series_description):
             info[t1wmp2rage_inv].append(s.series_id) # assign if a single series meets criteria            
@@ -88,18 +88,18 @@ def infotodict(seqinfo):
             info[fmap_se_pa].append(s.series_id) # assign if a single series meets criteria
         
         # pRF fMRI - run with 8bars stimulus
-        if ('fmri_8bars_dir-AP_MB2' in s.series_description):
+        if ('fmri_8bars_dir-AP' in s.series_description):
             info[fmri_8bars].append(s.series_id) # assign if a single series meets criteria
         
         
         # DIFFUSION
         # dir AP
         # include is_derived = FALSE as additional criteria
-        if ('NOT YET SORTED' in s.series_description) and not (s.is_derived):
+        if ('dmri_acq-60deg_dir-AP' in s.series_description) and not (s.is_derived):
             info[dwi_ap].append(s.series_id) # append if multiple series meet criteria
         # dir PA
         # include is_derived = FALSE as additional criteria
-        if ('NOT YET SORTED' in s.series_description) and not (s.is_derived):
+        if ('dmri_acq-60deg_dir-PA' in s.series_description) and not (s.is_derived):
             info[dwi_pa].append(s.series_id) # append if multiple series meet criteria 
             
             
