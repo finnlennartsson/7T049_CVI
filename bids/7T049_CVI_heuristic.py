@@ -34,11 +34,14 @@ def infotodict(seqinfo):
     t1wmp2rage_imag = create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_inv-1and2_part-imag_MP2RAGE')
     # and toghether we can get 4D image which has a T1w (PD-like contrast)
     t1wmp2rage_inv = create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_inv-1and2_MP2RAGE')
-    # Create "T1w" label for now
-    t1wmp2rage_mp2rage = create_key('sub-{subject}/anat/sub-{subject}_acq-mp2rage_run-{item:01d}_T1w')
+    # The reconstructed MP2RAGE will get UNIT1 suffix, as in the BIDS convention
+    t1wmp2rage_mp2rage = create_key('sub-{subject}/anat/sub-{subject}_acq-mp2rage_run-{item:01d}_UNIT1')
+    
+    # FLAIR
+    # Some subjects will have a FLAIR included, but this is not necessarily run with the same sequence
+    # Therefor it is converted into a BIDS FLAIR sequence with running number
+    flair = create_key('sub-{subject}/anat/sub-{subject}_run-{item:01d}_FLAIR')
 
-                              
-    # MP2RAGE in BIDS                             
     # DWI
     dwi_ap = create_key('sub-{subject}/dwi/sub-{subject}_dir-AP_run-{item:01d}_dwi')
     dwi_pa = create_key('sub-{subject}/dwi/sub-{subject}_dir-PA_run-{item:01d}_dwi')
