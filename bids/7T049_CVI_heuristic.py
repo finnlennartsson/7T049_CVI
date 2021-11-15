@@ -56,7 +56,7 @@ def infotodict(seqinfo):
     #fmap_gre_ap_mag = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_magnitude')
     #fmap_gre_ap_phase = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_phasediff')
     
-    info = {t1wmp2rage_real: [],t1wmp2rage_imag: [],t1wmp2rage_inv: [],t1wmp2rage_mp2rage: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap: []}
+    info = {t1wmp2rage_real: [],t1wmp2rage_imag: [],t1wmp2rage_inv: [],t1wmp2rage_mp2rage: [], flair: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap: []}
     
     for idx, s in enumerate(seqinfo):
         
@@ -71,6 +71,11 @@ def infotodict(seqinfo):
             info[t1wmp2rage_mp2rage].append(s.series_id) # assign if a single series meets criteria
         if ('T1w_acq-mp2rage' in s.series_description):
             info[t1wmp2rage_inv].append(s.series_id) # assign if a single series meets criteria            
+            
+        # FLAIR
+        if ('FLAIR' in s.series_description):
+            info[flair].append(s.series_id) # assign if a single series meets criteria            
+        
             
         # FIELDMAP/s
         # gre-fieldmap
@@ -90,6 +95,7 @@ def infotodict(seqinfo):
         if ('fmap_acq-se_dir-PA' in s.series_description):
             info[fmap_se_pa].append(s.series_id) # assign if a single series meets criteria
         
+        # FMRI 
         # pRF fMRI - run with 8bars stimulus
         if ('fmri_8bars_dir-AP' in s.series_description):
             info[fmri_8bars].append(s.series_id) # assign if a single series meets criteria
