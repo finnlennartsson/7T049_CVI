@@ -10,7 +10,7 @@ Conversion of DCMs in /sourcedata into NIfTIs in /rawdata
 2. validation of BIDS dataset
 
 Arguments:
-  sID				Subject ID (e.g. 107) 
+  sID				Subject ID (e.g. 7T049S03) 
 Options:
   -h / -help / --help           Print usage.
 "
