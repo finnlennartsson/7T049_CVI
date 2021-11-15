@@ -67,7 +67,7 @@ def infotodict(seqinfo):
             info[t1wmp2rage_real].append(s.series_id) # assign if a single series meets criteria
         if ('imag' in s.series_description) and not (s.is_derived):
             info[t1wmp2rage_imag].append(s.series_id) # assign if a single series meets criteria
-        if ('WIP-imag' in s.series_description) and (s.is_derived):
+        if ('WIP-imag' in s.series_description) or ('WIP_-_imag' in s.series_description) and (s.is_derived):
             info[t1wmp2rage_mp2rage].append(s.series_id) # assign if a single series meets criteria
         if ('T1w_acq-mp2rage' in s.series_description):
             info[t1wmp2rage_inv].append(s.series_id) # assign if a single series meets criteria            
