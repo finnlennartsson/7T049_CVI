@@ -58,7 +58,7 @@ fi
 ################ PROCESSING ################
 
 # Simple log
-logdir=$studydir/derivatives/logs/bids/sub-${sID}
+logdir=$studydir/derivatives/logs/sub-${sID}
 if [ ! -d $logdir ]; then mkdir -p $logdir; fi
 echo "Executing $0 $@ "> $logdir/sub-${sID}_$scriptname.log 2>&1 
 cat $0 >> $logdir/sub-${sID}_$scriptname.log 2>&1 
