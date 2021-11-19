@@ -95,7 +95,30 @@ filelist="$dwi $dwiPA $seAP $sePA"
 for file in $filelist; do
     filebase=`basename $file .nii.gz`;
     filedir=`dirname $file`
-    cp $file $filedir/$filebase.json $filedir/$filebase.bval $filedir/$filebase.bvec $datadir/dwi/orig/.
+    case $file in
+	
+	$dwi)
+	    petable=$codedir/../sequences/petable_dwi_acq-se_dir-AP_dwi.txt;
+	    mrconvert $file -json_import $filedir/$filebase.json -fslgrad $filedir/$filebase.bvec $filedir/$filebase.bval - | mrconvert - -import_pe_table $petable $datadir/dwi/orig/$filebase.mif.gz;
+	    ;;
+	
+	$dwiPA)
+	    petable=$codedir/../sequences/petable_dwi_acq-se_dir-PA_dwi.txt;
+	    mrconvert $file -json_import $filedir/$filebase.json -fslgrad $filedir/$filebase.bvec $filedir/$filebase.bval - | mrconvert - -import_pe_table $petable $datadir/dwi/orig/$filebase.mif.gz;
+	    ;;
+       
+	$seAP)
+	    petable=$codedir/../sequences/petable_fmap_acq-se_dir-AP_epi.txt;
+	    mrconvert $file -import_pe_table $petable $datadir/dwi/orig/$filebase.mif.gz;
+	    ;;
+	
+	$sePA)
+	    petable=$codedir/../sequences/petable_fmap_acq-se_dir-PA_epi.txt;
+	    mrconvert $file -import_pe_table $petable $datadir/dwi/orig/$filebase.mif.gz;
+	    ;;
+    esac
+    #cp $file $filedir/$filebase.json $filedir/$filebase.bval $filedir/$filebase.bvec $datadir/dwi/orig/.
+    
 done
 
 #Then update variables to only refer to filebase names (instead of path/file)
@@ -118,7 +141,7 @@ if [[ $dwi = "" ]];then
 else
     # Create a dwi.mif.gz-file to work with
     if [ ! -f dwi/preproc/dwi.mif.gz ]; then
-	mrconvert -json_import dwi/orig/$dwi.json -fslgrad dwi/orig/$dwi.bvec dwi/orig/$dwi.bval dwi/orig/$dwi.nii.gz dwi/preproc/dwi.mif.gz
+	mrconvert orig/$dwi.mif.gz dwi/preproc/dwi.mif.gz
     fi
 fi
 
@@ -162,10 +185,7 @@ cd $currdir
 cd $datadir/dwi/orig
 
 if [ ! -f ../preproc/seAPPA.mif.gz ]; then
-    mrconvert -json_import $seAP.json $seAP.nii.gz seAPtmp.mif
-    mrconvert -json_import $sePA.json $sePA.nii.gz sePAtmp.mif
-    mrcat seAPtmp.mif sePAtmp.mif ../preproc/seAPPA.mif.gz
-    rm se*tmp.mif
+    mrconvert $seAP.mif.gz $sePA.mif.gz ../preproc/seAPPA.mif.gz
 fi
 
 cd $currdir
@@ -182,13 +202,45 @@ if [ ! -f b0APPA.mif.gz ];then
     exit;
 fi
 
+## 2a. Do TOPUP
+# FL - should be moved to /fmap folder)
+if [ ! -d topup ]; then mkdir -p topup; fi
 
-# Do Topup and Eddy with dwipreproc
+topup_file=$codedir/../sequences/topup_in_acq-se_dir-APPA_dwi.txt
+# and put $topup_file in topup-folder
+if [ ! -f topup/topup_datain.txt ]; then cp $topup_file topup/topup_datain.txt; fi
+
+# Put input file in topup-folder
+if [ ! -f topup/topup_in.nii.gz ]; then
+    mrconvert b0APPA.mif.gz topup/topup_in.nii.gz
+fi
+# perform TOPUP
+if [ -f topup/fmap_se_dir-APPA_dwi_fieldcoef.nii.gz ]; then
+    echo "TOPUP has already been performed"
+else
+    echo "Performing TOPUP"
+    topup --imain=topup/topup_in --datain=topup/topup_datain.txt --out=topup/fmap_se_dir-APPA_dwi_fieldcoeff --fout=topup/fmap_se_dir-APPA_dwi_fieldmap 
+fi
+# Create a unwarped magnitude image
+if [ ! -f topup/fmap_se_dir-APPA_dwi_magnitude.nii.gz ]; then
+    fslmaths topup/fmap_se_dir-APPA_dwi_unwarped -Tmean topup/fmap_se_dir-APPA_dwi_magnitude
+fi
+
+exit;
+
+# create combined fmap_se_APPA file
+
+    mrconvert -coord 3 1 topup/topup_in.nii.gz topup/topup_in_2.nii.gz
+    applytopup --imain=topup/topup_in_1,topup/topup_in_2 --inindex=1,2 --datain=topup/topup_datain.txt --topup=topup/fmap_se --out=topup/fmap_se_mag
+    
 #
 # use b0APPA.mif.gz (i.e. choose the two best b0s - could be placed first in dwiAP and dwiPA
 #
 
 # Create a brain mask to go into dwifslpreproc
+
+
+if [ ! -f $derivativespath/eddy/slspec.txt ]; then cp $slspec_file $derivativespath/eddy/slspec.txt; fi
 
 if [ ! -f eddy_mask.mif.gz ]; then
     # NOTE - normally dwifslpreproc creates mask from dwi2mask

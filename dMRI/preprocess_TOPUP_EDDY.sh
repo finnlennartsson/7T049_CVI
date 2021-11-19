@@ -95,7 +95,30 @@ filelist="$dwi $dwiPA $seAP $sePA"
 for file in $filelist; do
     filebase=`basename $file .nii.gz`;
     filedir=`dirname $file`
-    cp $file $filedir/$filebase.json $filedir/$filebase.bval $filedir/$filebase.bvec $datadir/dwi/orig/.
+    case $file in
+	
+	$dwi)
+	    petable=$codedir/../sequences/petable_dwi_acq-se_dir-AP_dwi.txt;
+	    mrconvert -strides -1,+2,+3,+4 -json_import $filedir/$filebase.json -fslgrad $filedir/$filebase.bvec $filedir/$filebase.bval $file - | mrconvert - -import_pe_table $petable $datadir/dwi/orig/$filebase.mif.gz;
+	    ;;
+	
+	$dwiPA)
+	    petable=$codedir/../sequences/petable_dwi_acq-se_dir-PA_dwi.txt;
+	    mrconvert -strides -1,+2,+3,4 -json_import $filedir/$filebase.json -fslgrad $filedir/$filebase.bvec $filedir/$filebase.bval $file - | mrconvert - -import_pe_table $petable $datadir/dwi/orig/$filebase.mif.gz;
+	    ;;
+       
+	$seAP)
+	    petable=$codedir/../sequences/petable_fmap_acq-se_dir-AP_epi.txt;
+	    mrconvert -strides -1,+2,+3,4 -import_pe_table $petable $file $datadir/dwi/orig/$filebase.mif.gz;
+	    ;;
+	
+	$sePA)
+	    petable=$codedir/../sequences/petable_fmap_acq-se_dir-PA_epi.txt;
+	    mrconvert -strides -1,+2,+3,+4 -import_pe_table $petable $file $datadir/dwi/orig/$filebase.mif.gz;
+	    ;;
+    esac
+    #cp $file $filedir/$filebase.json $filedir/$filebase.bval $filedir/$filebase.bvec $datadir/dwi/orig/.
+    
 done
 
 #Then update variables to only refer to filebase names (instead of path/file)
@@ -110,7 +133,7 @@ sePA=`basename $sePA .nii.gz`
 
 if [ ! -d $datadir/dwi/preproc ]; then mkdir -p $datadir/dwi/preproc; fi
 
-cd $datadir
+cd $datadir/dwi
 
 if [[ $dwi = "" ]];then
     echo "No dwi data provided";
@@ -118,7 +141,7 @@ if [[ $dwi = "" ]];then
 else
     # Create a dwi.mif.gz-file to work with
     if [ ! -f dwi/preproc/dwi.mif.gz ]; then
-	mrconvert -json_import dwi/orig/$dwi.json -fslgrad dwi/orig/$dwi.bvec dwi/orig/$dwi.bval dwi/orig/$dwi.nii.gz dwi/preproc/dwi.mif.gz
+	mrconvert orig/$dwi.mif.gz preproc/dwi.mif.gz
     fi
 fi
 
@@ -162,10 +185,7 @@ cd $currdir
 cd $datadir/dwi/orig
 
 if [ ! -f ../preproc/seAPPA.mif.gz ]; then
-    mrconvert -json_import $seAP.json $seAP.nii.gz seAPtmp.mif
-    mrconvert -json_import $sePA.json $sePA.nii.gz sePAtmp.mif
-    mrcat seAPtmp.mif sePAtmp.mif ../preproc/seAPPA.mif.gz
-    rm se*tmp.mif
+    mrcat $seAP.mif.gz $sePA.mif.gz ../preproc/seAPPA_all_vols.mif.gz
 fi
 
 cd $currdir
@@ -182,13 +202,46 @@ if [ ! -f b0APPA.mif.gz ];then
     exit;
 fi
 
+## 2a. Do TOPUP
+# FL - should be moved to /fmap folder)
+if [ ! -d topup ]; then mkdir -p topup; fi
 
-# Do Topup and Eddy with dwipreproc
+# Put input file in topup-folder
+if [ ! -f topup/topup_in.nii.gz ]; then
+    mrconvert -strides -1,+2,+3,+4 -export_pe_table topup/topup_datain.txt -json_export topup/topup_in.json b0APPA.mif.gz topup/topup_in.nii.gz 
+fi
+# perform TOPUP
+if [ -f topup/field_fieldcoef.nii.gz ]; then
+    echo "TOPUP has already been performed"
+else
+    echo "Performing TOPUP"
+    topup --imain=topup/topup_in --datain=topup/topup_datain.txt --out=topup/field --fout=topup/fieldmap_map.nii.gz --config=/home/finn/Software/fsl/etc/flirtsch/b02b0.cnf --verbose --iout=topup/field_mag_unwarped
+fi
+# Create unwarped images of dwi_una unwarped magnitude image of meanb0, meanb1000 and meanb2600
+for bvalue in 0 1000 2600; do
+    if [ ! -f meanb${bvalue}_unwarped.nii.gz ]; then
+	dwiextract -strides -1,+2,+3,+4 -shells $bvalue dwi_den_unr.mif.gz - | mrconvert -export_pe_eddy b${bvalue}_tmp_applytopup_config.txt b${bvalue}_tmp_applytopup_indices.txt - b${bvalue}_tmp.nii.gz 
+	applytopup --imain=b${bvalue}_tmp.nii.gz --datain=b${bvalue}_tmp_applytopup_config.txt --inindex=1 --topup=topup/field --out=b${bvalue}_tmp_unwarped.nii.gz --method=jac
+	fslmaths b${bvalue}_tmp_unwarped.nii.gz -Tmean meanb${bvalue}_tmp_unwarped.nii.gz
+	bet meanb${bvalue}_tmp_unwarped.nii.gz meanb${bvalue}_tmp_unwarped_brain.nii.gz -m -R -F
+    fi
+    
+done
+exit;
+
+# create combined fmap_se_APPA file
+
+    mrconvert -coord 3 1 topup/topup_in.nii.gz topup/topup_in_2.nii.gz
+    applytopup --imain=topup/topup_in_1,topup/topup_in_2 --inindex=1,2 --datain=topup/topup_datain.txt --topup=topup/fmap_se --out=topup/fmap_se_mag
+    
 #
 # use b0APPA.mif.gz (i.e. choose the two best b0s - could be placed first in dwiAP and dwiPA
 #
 
 # Create a brain mask to go into dwifslpreproc
+
+
+if [ ! -f $derivativespath/eddy/slspec.txt ]; then cp $slspec_file $derivativespath/eddy/slspec.txt; fi
 
 if [ ! -f eddy_mask.mif.gz ]; then
     # NOTE - normally dwifslpreproc creates mask from dwi2mask
