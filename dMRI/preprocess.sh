@@ -194,8 +194,8 @@ if [ ! -f eddy_mask.mif.gz ]; then
     # NOTE - normally dwifslpreproc creates mask from dwi2mask
     # Instead make mask with BET from as the union av BET from meanb1000AP and meanb2600AP to ensure sufficient coverage/extent
     for bvalue in 1000 2600; do
-	dwiextract -shells $bvalue dwi_den_unr.mif.gz - | mrmath -axis 3 - mean mean${bvalue}APtmp.nii.gz
-	bet mean${bvalue}APtmp.nii.gz mean${bvalue}APtmp_brain.nii.gz -R -F -m
+	dwiextract -shells $bvalue dwi_den_unr.mif.gz - | mrmath -axis 3 - mean meanb${bvalue}APtmp.nii.gz
+	bet meanb${bvalue}APtmp.nii.gz meanb${bvalue}APtmp_brain.nii.gz -R -F -m
     done
     # make union av brain masks and save into eddy_mask.mif.gz
     mrcalc meanb1000APtmp_brain_mask.nii.gz meanb2600APtmp_brain_mask.nii.gz -add 1 -ge eddy_mask.mif.gz
