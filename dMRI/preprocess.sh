@@ -102,7 +102,7 @@ cd $studydir
 
 if [ ! -d $datadir/dwi/orig ]; then mkdir -p $datadir/dwi/orig; fi
 
-filelist="$dwiAP $dwiPA $seAP $sePA"
+filelist="$dwiAP $dwiPA"
 for file in $filelist; do
     filebase=`basename $file .nii.gz`;
     filedir=`dirname $file`
@@ -112,9 +112,6 @@ done
 #Then update variables to only refer to filebase names (instead of path/file)
 dwiAP=`basename $dwiAP .nii.gz` 
 dwiPA=`basename $dwiPA .nii.gz`
-seAP=`basename $seAP .nii.gz`
-sePA=`basename $sePA .nii.gz`
-
 
 ##################################################################################
 # 0. Create dwi.mif.gz to work with in /preproc and b0APPA.mif.gz in /preproc/topup
