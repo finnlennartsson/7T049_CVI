@@ -24,6 +24,7 @@ Options:
 [ $# -ge 1 ] || { usage; }
 command=$@
 sID=$1
+shift
 
 # Define folders
 codedir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -37,7 +38,6 @@ logdir=derivatives/logs/sub-${sID}
 t1=$rawdatadir/sub-$sID/anat/sub-${sID}_run-1_T1w.nii.gz
 threads=10;
 
-shift
 while [ $# -gt 0 ]; do
     case "$1" in
 	-T1) shift; t1=$1; ;;
@@ -79,18 +79,19 @@ t1base=`basename $t1 .nii.gz`
 t1mp2ragebase=`echo $t1base | sed 's/T1w/desc\-mp2rage\_T1w/g'`
 
 # Extract the two volumes (mr2rage and t1)
-mrconvert $t1 -coord 3 0 -axes 0,1,2 $fsdatadir/sub-$sID/preproc/${t1base}_tmp_mp2rage.nii.gz;
-mrconvert $t1 -coord 3 1 -axes 0,1,2 $fsdatadir/sub-$sID/preproc/${t1base}_tmp_t1.nii.gz;
-# and divide them / normalise
-mrcalc $fsdatadir/sub-$sID/preproc/${t1base}_tmp_mp2rage.nii.gz $fsdatadir/sub-$sID/preproc/${t1base}_tmp_t1.nii.gz -div $fsdatadir/sub-$sID/preproc/$t1mp2ragebase.nii.gz
+if [ ! -f $fsdatadir/sub-$sID/preproc/$t1mp2ragebase.nii.gz ]; then
+	mrconvert $t1 -coord 3 0 -axes 0,1,2 $fsdatadir/sub-$sID/preproc/${t1base}_tmp_mp2rage.nii.gz;
+	mrconvert $t1 -coord 3 1 -axes 0,1,2 $fsdatadir/sub-$sID/preproc/${t1base}_tmp_t1.nii.gz;
+	# and divide them / normalise
+	mrcalc $fsdatadir/sub-$sID/preproc/${t1base}_tmp_mp2rage.nii.gz $fsdatadir/sub-$sID/preproc/${t1base}_tmp_t1.nii.gz -div $fsdatadir/sub-$sID/preproc/$t1mp2ragebase.nii.gz
 
-# clean up
-rm $fsdatadir/sub-$sID/preproc/${t1base}_tmp_*.nii.gz
-
+	# clean up
+	rm $fsdatadir/sub-$sID/preproc/${t1base}_tmp_*.nii.gz
+fi
 
 ################################################
 ## 2.  Perform FreeSurfer segmentation/analysis
 
-recon-all -subjid sub-$sID -i $fsdatadir/sub-$sID/preproc/$t1mp2ragebase.nii.gz -sd $fsdatadir -threads $threads -all
+#recon-all -subjid sub-$sID -i $fsdatadir/sub-$sID/preproc/$t1mp2ragebase.nii.gz -sd $fsdatadir -threads $threads -all
 
 ################ FINISHED ################
