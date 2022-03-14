@@ -47,7 +47,7 @@ codedir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 while [ $# -gt 0 ]; do
     case "$1" in
-	-dwiAP) shift; dwi=$1; ;;
+	-dwiAP) shift; dwiAP=$1; ;;
 	-dwiPA) shift; dwiPA=$1; ;;
 	-b0APvol) shift; b0APvol=$1; ;;
 	-b0PAvol) shift; b0PAvol=$1; ;;
@@ -63,7 +63,7 @@ done
 if [ ! -f $dwiAP ]; then dwiAP=""; fi
 if [ ! -f $dwiPA ]; then dwiPA=""; fi
 
-echo "Registration and sMRI-processing
+echo "dMRI-preprocessing
 Subject:       $sID 
 DWI (AP):      $dwiAP
 DWI (PA):      $dwiPA
