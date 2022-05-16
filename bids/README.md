@@ -1,4 +1,4 @@
-Bash and python scripts to convert DICOM data into BIDS-organised NIfTI data.
+Bash and python scripts to convert DICOM data into [BIDS-organised](https://bids.neuroimaging.io/) NIfTI data.
 
 The folder structure will be
 - Original dicoms in `/dicomdir`
@@ -16,5 +16,7 @@ Generates /rawdata/.heudiconv/sub-$sID/dicominfo.tsv which is used to generate 7
 
 3. Run script `DcmSourcedata_to_NiftiRawdata.sh` \
 This converts the dicoms in `/sourcedata` to BIDS-organised NIfTIs in `/rawdata`using the heudiconv routine. 
-- `heudiconv` is run with using a Docker container using rules set in the python file `7T049_CVI_heuristic.py`
-- The script also makes a BIDS-validation and MRIQC
+- [heudiconv](https://github.com/nipy/heudiconv) is run with using a Docker container using rules set in the python file `7T049_CVI_heuristic.py`
+- The script also makes a BIDS-validation 
+4. Run script `MRIQC.sh` \
+This script runs [MRIQC](https://github.com/bids-standard/bids-validator) on the data
