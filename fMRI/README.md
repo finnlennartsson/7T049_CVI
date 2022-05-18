@@ -3,9 +3,22 @@
 ### Preprocessing
 Preprocessing of fMRI data time-series
 Run script \
-`preprocess_fsl.sh`\
+`preprocess_fsl.sh`
+1. `mcflirt -in fmri`
+2. choose example_func as the mean of the mcf funcionals 
+`fslmaths func_mcf -Tmean example_func`
+3. BET the flair and example_func
+`bet -F`
+4. Non-linear reg functional and FLAIR
+`epi_reg_nobbr.sh example_func_brain and flair_brain`
+5. No unwarp
+`applywarp`
+
+This gives motion and unwarp time-series
+
+
 or \
-`preprocess_fmriprep.sh`
+`preprocess_fmriprep.sh`\
 - [fMRIprep](https://fmriprep.org/en/stable/)
 
 ### 
