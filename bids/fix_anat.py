@@ -1,0 +1,167 @@
+
+import json
+import subprocess
+import os
+import nibabel as nib
+import numpy as np
+
+	#fix 1a: separate the inversion times functions from notebooks
+	 # call the code from the jupyter notebook here
+	#fix 1b: remove the anat/sub-7T049C10_run-1_inv-1and2_part-real_MP2RAGE_heudiconv141_real.nii.gz
+	#fix 1c: reshape data cube of UNIT1
+	#fix 1d: create a 4dim cube of both real and imag data
+
+
+class fix_anat:	
+	"""
+	class for fixing the anat folder
+	"""
+	
+	def __init__(s, dest, subj):
+		"""
+		arguments: 
+			- dest: relative folder to root of BIDS tree
+			- subj: subject folder name
+		"""
+		s.name = "anat"
+		#first half of each bids fileanme
+		s.part_filename = "./{}/{}/{}/{}".format(dest, subj, s.name, subj)
+		s.deriv_quit_folder = "./derivatives/quit/{}/anat".format(subj)
+		s.subj = subj
+		#these are the files to be deleted
+		s.blacklist=[s.part_filename + "*heudiconv141*", 
+					s.part_filename + "*1and2*",
+					s.part_filename + "*run-2_FLAIR*"]
+
+	#update the BIDS json file
+	def update_json_shape(s, nii, input_json_file, output_json_file):
+		"""
+		function to write a json file to disc that updates the dimension 
+		of the dcmmeta_shape value to match the new nifti file data shape. 
+		does not change any other values in the json file, but might 
+		change newlines and whitespace. 
+		
+		arguments:
+			- nii: nifti file to read data shape from
+			- input_json_file: original json input file to use as template
+			- output_json_file: destination to disk of new json file
+		"""
+		input_json = open(input_json_file)
+		json_dict = json.load(input_json)
+		input_json.close()
+		#update the json dict according to nii header
+		nii_data = nii.get_fdata()
+		json_dict["dcmmeta_shape"] = nii_data.shape
+		out_file = open(output_json_file, "w")
+		json.dump(json_dict, out_file)
+		out_file.close()
+
+	def reshape_UNIT1_dims(s):
+		"""
+		function to change the shape of the UNIT1 mp2rage file. 
+		a new nifty file will be written to disk that has the format
+		(x,z,y) instead of (x,y,0,z)
+		"""
+		
+		print("fixing the shape of UNIT1 mp2rage file")
+		input_nii_file = s.part_filename + "_acq-mp2rage_run-1_UNIT1.nii.gz"
+		temp_file = ".UNIT1.nii.gz"
+		os.rename(input_nii_file, temp_file)
+		nii = nib.load(temp_file)
+		nii_data = nii.get_fdata()
+		
+		new_data = np.zeros((nii_data.shape[0], nii_data.shape[1], nii_data.shape[3]))
+		new_data = nii_data[:,:,0,:]
+		nii_updated = nib.Nifti1Image(new_data, nii.affine)
+		json_file = s.part_filename + "_acq-mp2rage_run-1_UNIT1.json"
+		json_file_temp = json_file + ".tmp"
+		s.update_json_shape(nii_updated, json_file, json_file_temp)
+		u_xyz, u_t = nii.header.get_xyzt_units()
+		nii_updated.header.set_xyzt_units(u_xyz, u_t)
+		nib.save(nii_updated, input_nii_file)
+		os.rename(json_file_temp, json_file)
+		print("wrote " + input_nii_file)
+		os.remove(temp_file)
+
+	def create_QUIT_nifti(s):
+		"""
+			creates a new file in derivatives that is the input data for QUIT 
+			MP2RAGE and T1 calculation.   
+		"""
+		real_filename = s.part_filename + "_run-1_inv-1and2_part-real_MP2RAGE"
+		imag_filename = s.part_filename + "_run-1_inv-1and2_part-real_MP2RAGE"
+		output_file = s.deriv_quit_folder + "/quit_inv_1and2-cplx_MP2RAGE"
+		im_nii = nib.load(real_filename + ".nii.gz")
+		im_nii_data = im_nii.get_fdata()
+		re_nii = nib.load(imag_filename + ".nii.gz")
+		re_nii_data = re_nii.get_fdata()
+		quit_data = np.zeros(re_nii_data.shape)
+		quit_data = re_nii_data + im_nii_data*1j
+		
+		quit_nii = nib.Nifti1Image(quit_data, re_nii.affine)
+		u_xyz, u_t = re_nii.header.get_xyzt_units()
+		quit_nii.header.set_xyzt_units(u_xyz, u_t)
+		s.update_json_shape(quit_nii, real_filename + ".json", output_file + ".json")
+		nib.save(quit_nii, output_file + ".nii.gz")
+
+	def get_separate_nii(s, input_nii_file, inv_index):
+		nii = nib.load(input_nii_file)
+		nii_data = nii.get_fdata()
+		dual_header = nii.header
+		inv_data = nii_data[:, :, :, inv_index]
+		nii_inv = nib.Nifti1Image(inv_data, nii.affine)
+		u_xyz, u_t = nii.header.get_xyzt_units()
+		nii_inv.header.set_xyzt_units(u_xyz, u_t)
+		return nii_inv
+
+	def split_mp2rage_niftis(s):
+		#lets assume we only have one run for now
+		run = 1
+		for part in ['real', 'imag']:
+			i_prefix_file = s.part_filename + "_run-{}_inv-1and2_part-{}_MP2RAGE".format(run, part)
+			input_nii_file = i_prefix_file + ".nii.gz" 
+			input_json_file = i_prefix_file + ".json" 
+			print("splitting " + input_nii_file)
+			
+			for inv_idx in [0, 1]:
+				o_prefix_file = s.part_filename + "_run-{}_inv-{}_part-{}_MP2RAGE".format(run, inv_idx + 1, part)
+				output_nii_file = o_prefix_file + ".nii.gz" 
+				output_json_file = o_prefix_file + ".json" 
+				print(o_prefix_file + ".nii.gz" )
+				#convert inversion time 
+				nii_sep = s.get_separate_nii(input_nii_file, inv_idx)
+				#edit json
+				s.update_json_shape(nii_sep, input_json_file, output_json_file)
+				#write new nii file
+				nib.save(nii_sep, output_nii_file)
+
+	def gen_T1_map_mp2rage(s):
+		"""
+			function to call the QUIT library to generate a better mp2RAGE
+			image. 
+			https://quit.readthedocs.io/en/latest/Docs/Relaxometry.html#qi-mp2rage
+			
+			#pass the json file to th e
+			qi mp2rage input_file.nii.gz --mask=mask_file.nii.gz < mp2rage_parameters.json
+		"""
+		code_path = os.path.dirname(os.path.relpath(__file__))
+		mp2rage_json_file = code_path + "/mp2rage_parameters.json"
+		mp2rage_input_file = s.deriv_quit_folder + "/quit_inv_1and2-cplx_MP2RAGE.nii.gz"
+		qi_cmd = "qi mp2rage {} < {}".format(mp2rage_input_file, mp2rage_json_file)
+		result = subprocess.run([qi_cmd], shell=True, stdout=subprocess.PIPE)
+		print (qi_cmd)
+		for out_file in ("MP2_UNI.nii.gz", "MP2_T1.nii.gz"):
+			os.rename(out_file, s.deriv_quit_folder + "/" + out_file)	
+
+	def execute(s):
+		"""
+			executed by process_folder in fix_bids_tree.py
+			returns a list of strings of files to be deleted, with wildcards
+		"""
+		print("working on " + s.part_filename)
+		s.split_mp2rage_niftis()
+		s.reshape_UNIT1_dims()
+		s.create_QUIT_nifti()
+		s.gen_T1_map_mp2rage()
+		
+		return s.blacklist
