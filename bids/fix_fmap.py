@@ -1,13 +1,7 @@
 import os
 import json
-
-#fix the fmap folder. 
-
-#fix 2: add phasecodingdirection to fmap/sub-7T049C10_acq-se_dir-AP_run-1_epi.nii.gz
-#fmap.fix_phase_coding(subj)
-	
-#fix 3: fix =TOTAL_READOUT_TIME_MUST_DEFINE  for 
-#fmap/sub-7T049C10_acq-se_dir-AP_run-1_epi.nii.gz
+import pydicom
+from typing import NamedTuple
 
 class fix_fmap:
 	"""
@@ -46,28 +40,34 @@ class fix_fmap:
 		out_file.close()
 		os.rename(json_file_temp, json_file)
 	
-	def calc_total_readout_time(s):
+	def calc_total_readout_time(s, se_dir):
 		"""
+		read DICOM files to get phase encoding direction and  
 		calculate total readout time according to 
 		https://osf.io/xvguw/wiki/home/?view_only=6887e555825743c7bbdfce114500fb8d
 		"""
-		#values fetched from source data dicoms
-		#WaterFatShift = 2001,1022
-		#dcmdump fmap_acq-se_dir-PA_00107.dcm  | grep 2001,1022
-		# (2001,1022) FL 31.384811 #   4, 1 WaterFatShift
-		water_fat_shift = 31.384811
-		#ImagingFrequency = 0018,0084
-		#dcmdump fmap_acq-se_dir-PA_00107.dcm  | grep 0018,0084
-		# (0018,0084) DS [298.038485] #  10, 1 ImagingFrequency
-		imag_freq = 298.038485
-		#EPI_Factor = 0018,0091 or 2001,1013 			
-		#(2001,1013) SL 45             #   4, 1 EPIFactor
-		epi_factor = 45 
+		idx = 12 if se_dir == "PA" else 13
+		dcm_file = "./sourcedata/{}/s{}01_fmap_acq-se_dir-{}/fmap_acq-se_dir-{}_00001.dcm".format(s.subj, idx, se_dir, se_dir) 
+		print("reading header from " + dcm_file)
+		ds = pydicom.read_file(dcm_file)
+		
+		#print(ds[0x0018, 0x1312]) #'InPlanePhaseEncodingDirection'
+		#print(ds[0x2001, 0x1022]) #'WaterFatShift'
+		#print(ds[0x0018, 0x0084]) #'ImagingFrequency'
+		#print(ds[0x2001, 0x1013]) #'EPIFactor'
+		if(ds[0x0018, 0x1312].value == 'COL'): #'InPlanePhaseEncodingDirection'
+			phase_encoding_dir =  'i'
+		else:
+			print("ERROR: unknown phase encoding direction in DICOM files")
+			phase_encoding_dir =  'Error' 
+		water_fat_shift = ds[0x2001, 0x1022].value #'WaterFatShift'
+		imag_freq = ds[0x0018, 0x0084].value #'ImagingFrequency'
+		epi_factor = ds[0x2001, 0x1013].value #'EPIFactor'
 		actual_echo_spacing = water_fat_shift / (imag_freq * 3.4
 								* (epi_factor + 1))
 		total_readout_time = actual_echo_spacing * epi_factor
 		print("calculated total readout time as " +  str(total_readout_time))
-		return total_readout_time
+		return phase_encoding_dir, total_readout_time
 	
 	def add_missing_se_data(s):
 		"""
@@ -86,12 +86,9 @@ class fix_fmap:
 			json_file_temp = json_file + ".tmp"
 			json_dict = json.load(input_json)
 			input_json.close()
-			#Phaseencoding can be found from:
-			#dcmdump fmap_acq-se_dir-PA_00001.dcm | grep 0018,1312
-			#CS [COL]           #   4, 1 InPlanePhaseEncodingDirection
-			# COL means PhaseEncodingDirection is set to  i 
-			json_dict["PhaseEncodingDirection"] = 'i'
-			json_dict["TotalReadoutTime"] = s.calc_total_readout_time()
+			phase_enc_dir, total_readout_time = s.calc_total_readout_time(dr)
+			json_dict["PhaseEncodingDirection"] = phase_enc_dir
+			json_dict["TotalReadoutTime"] = total_readout_time
 			json_dict["IntendedFor"] = target_files	
 			out_file = open(json_file_temp, "w")
 			json.dump(json_dict, out_file)
