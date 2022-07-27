@@ -8,6 +8,7 @@ import shutil
 from distutils.dir_util import copy_tree, remove_tree
 from distutils.errors import DistutilsFileError
 
+import bids_util
 from fix_anat import fix_anat
 from fix_fmap import fix_fmap
 from fix_other import fix_dwi, fix_func
@@ -18,6 +19,44 @@ dest = "fixed_rawdata"
 subj = "sub-7T049C10"
 code_path = ""
 
+new_lines = []
+
+
+#dest = "func/sub-7T049C10_task-8bars_dir-AP_run-3_bold.nii.gz"
+#count = 0
+#s Strips the newline character
+#for line in Lines:
+#	count += 1
+#	line_file, rest_line  = line.split('\t', 1)
+#	print(line_file)
+#	if(dest == line_file):
+#		print("REPLACE")
+#		line = "gay" + "\t" + rest_line 
+	#new_lines.append(line)
+#print(new_lines)
+#sys.quit()
+
+scans_lines = []
+def load_original_scans():
+	"""
+	Load the original list of files in scans.tsv, before renaming 
+	"""
+	global scans_lines
+	scans = "{}/{}/{}_scans.tsv".format(dest, subj, subj)
+	f = open(scans, 'r')
+	scans_lines = f.readlines()
+	f.close()
+
+def save_new_scans():
+	global scans_lines
+	"""
+	Save the updates list of files in scans.tsv, after renaming 
+	"""
+	scans = "{}/{}/{}_scans.tsv".format(dest, subj, subj)
+	with open(scans, 'w') as f:
+		for line in scans_lines:
+			f.write(f"{line}\n")
+
 def copy_bids_tree():
 	"""
 	Create or update a bids tree in <dest> folder. <subj> will be copied 
@@ -27,12 +66,14 @@ def copy_bids_tree():
 	global source, dest
 	# Create a new directory if it does not exist 
 	dest_tree = "./{}/{}".format(dest, subj)
-	deriv_tree = "./derivatives/quit/{}/anat".format(subj)
+	quit_tree = "./derivatives/quit/{}/anat".format(subj)
+	pymp2rage_tree = "./derivatives/pymp2rage/{}/anat".format(subj)
 
 	#create empty derivatives folder
-	if os.path.exists(deriv_tree):
-		remove_tree(deriv_tree)
-	os.makedirs(deriv_tree)
+	for tree in (quit_tree, pymp2rage_tree):
+		if os.path.exists(tree):
+			remove_tree(tree)
+		os.makedirs(tree)
 	
 	#delete old bids tree copy if exists
 	if not os.path.exists("./" + dest):
@@ -52,33 +93,6 @@ def copy_bids_tree():
 	except DistutilsFileError as e:
 		print("invalid subject " + subj)
 		sys.exit()
-	
-	#update scans.tsv
-	#TODO: kind of ugly hack! but would be fiddly to generate this tsv 
-	shutil.copy("{}/renamed_scans.tsv".format(code_path), "{}/{}_scans.tsv".format(dest_tree, subj))
-	print("updated <subj>_scans.tsv")
-
-def wildcard_delete(f_wc):
-	"""
-	deletes one or more files that match the filename passed
-	Inputs:
-		- f_wc: a file name that can include wildcard characters
-				to match one or several files
-	
-	"""
-	#support wildcards
-	print("deleting " + f_wc)
-	matching_files = glob.glob(f_wc)
-	# Iterate over the list of filepaths & remove each file.
-	f_ct = 0
-	for f in matching_files:
-		try:
-			#print("deleting " + f)
-			os.remove(f)
-			f_ct += 1
-		except:
-			print("Error while deleting file : ", f)
-	print(str(f_ct) + " files deleted")
 
 def process_folder(folder_obj):
 	"""
@@ -87,14 +101,13 @@ def process_folder(folder_obj):
 		
 		Inputs:
 			- folder_obj - a class that has an execute function that 
-				returns a list of strings
+				returns a list of tuple of two strings, source and destination
+				destination is None if the file is to be deleted. 
 		
 	"""
 	print("executing " + folder_obj.name + " module")
-	bl = folder_obj.execute()	
-	for f in bl:
-		wildcard_delete(f)
-	
+	folder_obj.execute()
+
 def update_bids_ignore():
 	"""
 		writes a new .bidsignore file in BIDS root. 
@@ -152,14 +165,19 @@ def main():
 	else:
 		subj = args.positionals[0]
 		print("subject is " + subj)
-
+		
+	#copy the subject files to the destination tree
 	copy_bids_tree()
-
-	process_folder(fix_anat(dest, subj))
-	process_folder(fix_dwi(dest, subj))
-	process_folder(fix_func(dest, subj))
-	process_folder(fix_fmap(dest, subj))
-
+	#prepare scans.tsv file
+	bids_util.load_original_scans(dest, subj)
+	#execute fixes for each folder
+	fix_anat(dest, subj).execute()
+	fix_dwi(dest, subj).execute()
+	fix_func(dest, subj).execute()
+	fix_fmap(dest, subj).execute()
+	#save scans.tsv with changes
+	bids_util.save_new_scans()
+	
 	update_bids_ignore()
 
 	run_validator()

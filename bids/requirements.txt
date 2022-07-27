@@ -1,4 +1,8 @@
 #pip packages needed for fix_bids_tree.py
 nibabel
-numpy
+bids
+nilearn
+pymp2rage
+numpys
 json
+pydicom

@@ -1,7 +1,7 @@
 import os
 import json
 import pydicom
-from typing import NamedTuple
+import bids_util
 
 class fix_fmap:
 	"""
@@ -18,6 +18,8 @@ class fix_fmap:
 		s.name = "fmap"
 		s.part_filename = "./{}/{}/{}/{}".format(dest, subj, s.name, subj)
 		s.part_bold_name = "{}/{}".format("func", subj)
+		s.sc_pre_str = "fmap/{}".format(subj)
+		
 		s.subj = subj
 		s.blacklist=[]
 	
@@ -45,16 +47,15 @@ class fix_fmap:
 		read DICOM files to get phase encoding direction and  
 		calculate total readout time according to 
 		https://osf.io/xvguw/wiki/home/?view_only=6887e555825743c7bbdfce114500fb8d
+		
+		arguments.
+			se_dir: either PA or AP. affects which file to edit. 
 		"""
 		idx = 12 if se_dir == "PA" else 13
 		dcm_file = "./sourcedata/{}/s{}01_fmap_acq-se_dir-{}/fmap_acq-se_dir-{}_00001.dcm".format(s.subj, idx, se_dir, se_dir) 
 		print("reading header from " + dcm_file)
 		ds = pydicom.read_file(dcm_file)
 		
-		#print(ds[0x0018, 0x1312]) #'InPlanePhaseEncodingDirection'
-		#print(ds[0x2001, 0x1022]) #'WaterFatShift'
-		#print(ds[0x0018, 0x0084]) #'ImagingFrequency'
-		#print(ds[0x2001, 0x1013]) #'EPIFactor'
 		if(ds[0x0018, 0x1312].value == 'COL'): #'InPlanePhaseEncodingDirection'
 			phase_encoding_dir =  'i'
 		else:
@@ -119,15 +120,15 @@ class fix_fmap:
 			
 	def execute(s):
 		"""
-			executed by process_folder in fix_bids_tree.py
-			returns a list of strings of files to be deleted, with wildcards
+			executed by fix_bids_tree.py
+			performs fixes for BIDS tree and updates scans.tsv
 		"""
 		print("folder fmap on " + s.part_filename)
 		s.rename_gre_fmap()
 		s.add_missing_se_data()
 		s.add_missing_gre_data()
-		return s.blacklist
-
-	
-	
-
+		
+		bids_util.rename_scan_file(s.sc_pre_str + "_acq-gre_dir-AP_run-1_epi1.nii.gz",
+				[s.sc_pre_str + "_acq-gre_run-1_fieldmap.nii.gz"])
+		bids_util.rename_scan_file(s.sc_pre_str + "_acq-gre_dir-AP_run-1_epi2.nii.gz",
+				[s.sc_pre_str + "_acq-gre_run-1_magnitude.nii.gz"])

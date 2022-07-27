@@ -4,13 +4,13 @@ import subprocess
 import os
 import nibabel as nib
 import numpy as np
+import bids_util
 
 	#fix 1a: separate the inversion times functions from notebooks
 	 # call the code from the jupyter notebook here
 	#fix 1b: remove the anat/sub-7T049C10_run-1_inv-1and2_part-real_MP2RAGE_heudiconv141_real.nii.gz
 	#fix 1c: reshape data cube of UNIT1
 	#fix 1d: create a 4dim cube of both real and imag data
-
 
 class fix_anat:	
 	"""
@@ -27,6 +27,7 @@ class fix_anat:
 		#first half of each bids fileanme
 		s.part_filename = "./{}/{}/{}/{}".format(dest, subj, s.name, subj)
 		s.deriv_quit_folder = "./derivatives/quit/{}/anat".format(subj)
+		s.sc_pre_str = "anat/{}".format(subj)
 		s.subj = subj
 		#these are the files to be deleted
 		s.blacklist=[s.part_filename + "*heudiconv141*", 
@@ -89,7 +90,7 @@ class fix_anat:
 			MP2RAGE and T1 calculation.   
 		"""
 		real_filename = s.part_filename + "_run-1_inv-1and2_part-real_MP2RAGE"
-		imag_filename = s.part_filename + "_run-1_inv-1and2_part-real_MP2RAGE"
+		imag_filename = s.part_filename + "_run-1_inv-1and2_part-imag_MP2RAGE"
 		output_file = s.deriv_quit_folder + "/quit_inv_1and2-cplx_MP2RAGE"
 		im_nii = nib.load(real_filename + ".nii.gz")
 		im_nii_data = im_nii.get_fdata()
@@ -155,8 +156,7 @@ class fix_anat:
 
 	def execute(s):
 		"""
-			executed by process_folder in fix_bids_tree.py
-			returns a list of strings of files to be deleted, with wildcards
+			performs all fixes for anat folder and updates scans.tsv file.
 		"""
 		print("working on " + s.part_filename)
 		s.split_mp2rage_niftis()
@@ -164,4 +164,15 @@ class fix_anat:
 		s.create_QUIT_nifti()
 		s.gen_T1_map_mp2rage()
 		
-		return s.blacklist
+		#fix the <subj>_scans.tsv file
+		bids_util.rename_scan_file(s.sc_pre_str + "_run-1_inv-1and2_part-imag_MP2RAGE.nii.gz"
+			, [s.sc_pre_str + "_run-1_inv-1_part-imag_MP2RAGE.nii.gz",
+			s.sc_pre_str + "_run-1_inv-2_part-imag_MP2RAGE.nii.gz"])
+		bids_util.rename_scan_file(s.sc_pre_str + "_run-1_inv-1and2_part-real_MP2RAGE.nii.gz"
+			, [s.sc_pre_str + "_run-1_inv-1_part-real_MP2RAGE.nii.gz",
+			s.sc_pre_str + "_run-1_inv-2_part-real_MP2RAGE.nii.gz"])
+		bids_util.delete_scan_file(s.sc_pre_str + "_run-2_FLAIR.nii.gz")
+		bids_util.delete_scan_file(s.sc_pre_str + "_run-1_inv-1and2_MP2RAGE.nii.gz")
+		#delete unwanted files
+		for f in s.blacklist:
+			bids_util.wildcard_delete(f)

@@ -1,3 +1,4 @@
+import bids_util
 
 class fix_func:
 	"""
@@ -26,18 +27,18 @@ class fix_func:
 	
 	def execute(s):
 		"""
-			executed by process_folder in fix_bids_tree.py
-			returns a list of strings of files to be deleted, with wildcards
+			executed in fix_bids_tree.py
 		"""
 		s.fix_tsv_column_desc()
 		s.add_missing_json_data()
-		return s.blacklist
 
 class fix_dwi:
 	"""
 	class for fixing the dwi folder
 	delete unwanted files in dwi folder
 	fix 1c: remove unneeded ADC files
+	
+	TODO: get the right b-values and b-vectors - from sequences folder? 
 	"""
 	
 	def __init__(s, dest, subj):
@@ -45,7 +46,6 @@ class fix_dwi:
 		arguments: 
 			- dest: relative folder to root of BIDS tree
 			- subj: subject folder name
-		
 		"""
 		s.name = "dwi"
 		s.subj = subj
@@ -54,7 +54,7 @@ class fix_dwi:
 		
 	def execute(s):
 		"""
-			executed by process_folder in fix_bids_tree.py
-			returns a list of strings of files to be deleted, with wildcards
+			executed in fix_bids_tree.py
 		"""
-		return s.blacklist
+		for f in s.blacklist:
+			 bids_util.wildcard_delete(f)
