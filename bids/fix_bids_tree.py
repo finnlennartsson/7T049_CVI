@@ -9,179 +9,162 @@ from distutils.dir_util import copy_tree, remove_tree
 from distutils.errors import DistutilsFileError
 
 import bids_util
+from bids_util import log_print
 from fix_anat import fix_anat
 from fix_fmap import fix_fmap
 from fix_other import fix_dwi, fix_func
-
-source = "rawdata"
-dest = "fixed_rawdata"
-#default subject goes here - maybe replace with error message later
-subj = "sub-7T049C10"
-code_path = ""
-
-new_lines = []
+from create_pymp2rage import pymp2rage_module
+from create_derivs import quit_module
 
 
-#dest = "func/sub-7T049C10_task-8bars_dir-AP_run-3_bold.nii.gz"
-#count = 0
-#s Strips the newline character
-#for line in Lines:
-#	count += 1
-#	line_file, rest_line  = line.split('\t', 1)
-#	print(line_file)
-#	if(dest == line_file):
-#		print("REPLACE")
-#		line = "gay" + "\t" + rest_line 
-	#new_lines.append(line)
-#print(new_lines)
-#sys.quit()
-
-scans_lines = []
-def load_original_scans():
+def add_subject_to_participants(runner):
 	"""
-	Load the original list of files in scans.tsv, before renaming 
+	make sure the participants.tsv contains the subject data from 
+	original bids tree participants.tsv, but only the ones that have been processed. 
+	if file dont exist, create a new one. 
+	dont add the subject if it has already been run. 
+	TODO: maybe make sure to copy over the subj line even if already exists?
+	arguments:
+		- runner: task_runner parent 
 	"""
-	global scans_lines
-	scans = "{}/{}/{}_scans.tsv".format(dest, subj, subj)
-	f = open(scans, 'r')
-	scans_lines = f.readlines()
-	f.close()
-
-def save_new_scans():
-	global scans_lines
-	"""
-	Save the updates list of files in scans.tsv, after renaming 
-	"""
-	scans = "{}/{}/{}_scans.tsv".format(dest, subj, subj)
-	with open(scans, 'w') as f:
-		for line in scans_lines:
-			f.write(f"{line}\n")
-
-def copy_bids_tree():
-	"""
-	Create or update a bids tree in <dest> folder. <subj> will be copied 
-	here and processed to not cause BIDS validation errors.  
-	"""
-	
-	global source, dest
-	# Create a new directory if it does not exist 
-	dest_tree = "./{}/{}".format(dest, subj)
-	quit_tree = "./derivatives/quit/{}/anat".format(subj)
-	pymp2rage_tree = "./derivatives/pymp2rage/{}/anat".format(subj)
-
-	#create empty derivatives folder
-	for tree in (quit_tree, pymp2rage_tree):
-		if os.path.exists(tree):
-			remove_tree(tree)
-		os.makedirs(tree)
-	
-	#delete old bids tree copy if exists
-	if not os.path.exists("./" + dest):
-		os.makedirs("./" + dest)
-	if os.path.exists(dest_tree):
-		print("delete old dataset " + dest_tree)
-		remove_tree(dest_tree)
-
-	#fetch README and dataset_description
-	shutil.copy("./{}/README".format(source), "./{}/README".format(dest))
-	shutil.copy("./{}/dataset_description.json".format(source), "./{}/dataset_description.json".format(dest))
-	
-	#make new copy of bids tree
+	old_part_tsv = "{}/participants.tsv".format(runner.get_global("orig_bids_root"))
+	#find the current subjects line in old particpants.tsv
+	found = False
 	try:
-		copy_tree("./{}/{}".format(source, subj), dest_tree)
-		print("copied " + "./{}/{}".format(source, subj) + " to " + dest_tree)		
-	except DistutilsFileError as e:
-		print("invalid subject " + subj)
+		with open(old_part_tsv, 'r') as f:
+			for cur_part_line in f.readlines():
+				try:
+					subj_name, rest_line  = cur_part_line.split('\t', 1)
+					if(subj_name == runner.subj):
+						found = True
+						subj_part_line = cur_part_line
+						break
+				except Exception as e:
+					#ignore non tab lines
+					pass
+		if not found:
+			raise(Exception("Participant {} not in participants.tsv".format(runner.subj)))
+	except Exception as e:
+		log_print(str(e), force=True)
+		sys.exit()
+	new_part_tsv = "{}/participants.tsv".format(runner.get_task_conf("bids_output"))
+	try:
+		if not os.path.exists(new_part_tsv):
+			log_print("creating new " + new_part_tsv, force=True)
+			with open(new_part_tsv, 'w') as f:
+				participant_header = "participant_id\tage\tsex\tgroup\n"
+				f.write(f"{participant_header}")
+				f.write(f"{subj_part_line}")
+		else:
+			with open(new_part_tsv, 'r') as f:
+				found = False
+				for read_line in f.readlines():
+					try:
+						subj_name, rest_line  = read_line.split('\t', 1)
+						if(subj_name == runner.subj):
+							found = True
+							break
+					except Exception as e:
+						#ignore non tab lines
+						pass
+			if not found:
+				with open(new_part_tsv, 'a') as f:
+					f.write(f"{subj_part_line}")
+					print("appended to " + new_part_tsv)
+	except Exception as e:
+		log_print("failed to update participants.tsv: " + str(e), force=True)
 		sys.exit()
 
-def process_folder(folder_obj):
+def copy_to_new_tree(runner, f):
 	"""
-		execute the execute() function of the module passed to it. 
-		delete all the files in the blacklist returned from the execute function
-		
-		Inputs:
-			- folder_obj - a class that has an execute function that 
-				returns a list of tuple of two strings, source and destination
-				destination is None if the file is to be deleted. 
-		
+	copy a file from bids root to new bids tree
+	arguments
+			- runner: task runner executing fix bids
+			- f: a filename
 	"""
-	print("executing " + folder_obj.name + " module")
-	folder_obj.execute()
+	in_bids = runner.get_global("orig_bids_root")
+	out_bids = runner.get_task_conf("bids_output")
+	shutil.copy("./{}/{}".format(in_bids, f), "./{}/{}".format(out_bids, f))
 
-def update_bids_ignore():
+def copy_bids_tree(runner):
+	"""
+	Create or update a bids tree in <bids_output> folder. <bids_input>/<subj> 
+	will be copied here and processed to not cause BIDS validation errors.  
+	
+	arguments
+			- runner: task runner executing fix bids
+	"""
+	in_bids = runner.get_global("orig_bids_root")
+	out_bids = runner.get_task_conf("bids_output")
+	dest_tree = "./{}/{}".format(out_bids, runner.subj)
+	#delete old bids tree copy if exists
+	if not os.path.exists("./" + out_bids):
+		os.makedirs("./" + out_bids)
+	if os.path.exists(dest_tree):
+		log_print("delete old dataset " + dest_tree)
+		remove_tree(dest_tree)
+	
+	add_subject_to_participants(runner)
+	
+	#fetch README and dataset_description
+	for f in ("README", "dataset_description.json", "participants.json", 
+		"scans.json", "task-8bars_bold.json" ):
+		copy_to_new_tree(runner, f)
+	
+	#make new copy of subject bids tree
+	try:
+		copy_tree("./{}/{}".format(in_bids, runner.subj), dest_tree)
+		log_print("copied " + "./{}/{}".format(in_bids, runner.subj) + " to " + dest_tree)		
+	except DistutilsFileError as e:
+		log_print("invalid subject " + runner.subj)
+		sys.exit()
+
+def update_bids_ignore(bids_root):
 	"""
 		writes a new .bidsignore file in BIDS root. 
+		arguments:
+			-bids_root
 	"""
-	with open(dest + '/.bidsignore', 'w') as f:
+	with open(bids_root + '/.bidsignore', 'w') as f:
 		f.write("#Ignore certain warnings\n")
-		f.write('./*.tsv\n')
-		f.write('**/*_bold.nii.gz')
-	print("Wrote .bidsignore")
-	#fix 6: custom column without description error in 
-	#func/sub-7T049C10_task-8bars_dir-AP_run-1_events.tsv
+		#f.write('./*.tsv\n')
+	log_print("Wrote .bidsignore")
 
-def run_validator():
+def run_validator(runner):
 	"""
 		runs the bids validator program from docker container
 	"""
-	print("Running the bids validator docker script")
-	result = subprocess.run(["{}/validate_bids_output.sh".format(code_path)], stdout=subprocess.PIPE)
-	print("check ./derivatives/bids-validator_report.txt")
+	log_print("Running the bids validator docker script")
 	
-def main():
+	runner.sh_run("{}/validate_bids_output.sh".format(runner.code_path))
+	log_print("check ./{}/bids-validator_report.txt".format(runner.get_global("deriv_folder")))
+
+def process_subject(runner):
 	"""
-	fix_bids_tree program 
-	creates a new BIDS tree copy if not existing, and adds a new subject 
-	to the tree. 
-	arguments:
-		- -v verbose output (not implemented)
-		- first argument: subject string, if missing use default sub-7T049C10
+	fix bids tree for a given bids tree and subject
+	and run validator
 	
-	copy subject to tree
-	process each subfolder
-	write .bidsignore file
-	run BIDS validator script
-	
-	output:
-		- an updates fixed-rawdata directory with new subject added
-		- updated derivatives directory
-		- bids validator output
+	input arguments:
+		runner: parent task_runner object 
+		in_bids: input root bids folder
+		out_bids: output root bids folder
+		subject: subj label
 	"""
-	global subj, code_path
-	#todo: use issues on githubs
-	#TODO: implement verbose? 
-	#TODO: allow to pass multiple subjects to script and do them all?
-	code_path = os.path.dirname(os.path.relpath(__file__))
 	
-	parser = argparse.ArgumentParser(description = "Fix BIDS tree output from Philips 7T")
-	parser.add_argument('-v', '--verbose', nargs='?', const=True, type=bool)
-	parser.add_argument('positionals', nargs='*')
-	args = parser.parse_args()
-	
-	if args.verbose:
-		print("TODO: implement Verbose output")
-	if not args.positionals:
-		print("using default subject " + subj)
-	else:
-		subj = args.positionals[0]
-		print("subject is " + subj)
-		
 	#copy the subject files to the destination tree
-	copy_bids_tree()
+	copy_bids_tree(runner)
 	#prepare scans.tsv file
-	bids_util.load_original_scans(dest, subj)
+	bids_util.load_original_scans(runner.get_task_conf("bids_output"), runner.subj)
 	#execute fixes for each folder
-	fix_anat(dest, subj).execute()
-	fix_dwi(dest, subj).execute()
-	fix_func(dest, subj).execute()
-	fix_fmap(dest, subj).execute()
+	#note: its ok for folders to be missing, fail gracefully. 
+	fix_anat(runner).execute()
+	fix_dwi(runner).execute()
+	fix_func(runner).execute()
+	fix_fmap(runner).execute()
 	#save scans.tsv with changes
-	bids_util.save_new_scans()
+	bids_util.save_new_scans(runner)
+	update_bids_ignore(runner.get_task_conf("bids_output"))
 	
-	update_bids_ignore()
-
-	run_validator()
-
 if __name__ == "__main__":
-	main()
+	print("run with pipeline.py -t fix_bids <subj> -c <conf.json>")
 
