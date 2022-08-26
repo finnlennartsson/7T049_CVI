@@ -24,7 +24,7 @@ In short the goals of the preprocessing is
  - TODO: also execute fMRIPREP on the data  
  - While doing the above, keep detailed logs of the execution of the subroutines and external programs
 
-#Description of the currently defined tasks
+# Description of the currently defined tasks
 - dicom_convert: convert a folder of dicom files of a subject into a BIDS tree of nifti+json files 
 - fix_bids: output a valid bids tree in a chosen destination from a converted BIDS tree. Note that the phase encoding direction for the AP and PA spin echo fieldmaps are manually entered. 
 - mp2rage: compute MP2RAGE UNIT1 and T1map images into the derivatives folder
@@ -32,7 +32,7 @@ In short the goals of the preprocessing is
 - cat12: execute CAT12 to process the masked image
 - freesurfer: run freesurfer on the denoised image  
 
-#Usage instructions
+# Usage instructions
 execute pipeline.py with a python 3.7+ interpreter. 
 
 usage: pipeline.py [-h] [-v] [-c CONFIG] [-t TASK] [-d]
@@ -43,11 +43,11 @@ usage: pipeline.py [-h] [-v] [-c CONFIG] [-t TASK] [-d]
   -t TASK, --task TASK
   -d, --dummy
 
-- -v, verbose: bool flag, set to show all log printing in terminal 
-- -c, --config: choose a json configuration file, see below
-- -t, --task: name a task to execute, selected from the task list below. more can be easily added but requires changed in pipeline.py at the moment. 
-- -d, --dummy: dont actually execute any shell commands, for testing purposes
-- subject list: one or more subject labels, including "sub-", separated by space.   
+ - -v, verbose: bool flag, set to show all log printing in terminal 
+ - -c, --config: choose a json configuration file, see below
+ - -t, --task: name a task to execute, selected from the task list below. more can be easily added but requires changed in pipeline.py at the moment. 
+ - -d, --dummy: dont actually execute any shell commands, for testing purposes
+ - subject list: one or more subject labels, including "sub-", separated by space.   
 
 if no task is set, the sequence of tasks in task_list in the config file is used. 
 if no subject list is provided, the list of subjects in subj_list in the config file is used. 
@@ -57,7 +57,7 @@ A default json file is provided in pipeline_conf.json which is used for
 
 the most important options here are choosing the new bids tree output directory (default fixed_bids/), choosing the derivatives directory (default derivatives/). The file have options that are global, as well as options for each task. Note that the location of the spm12 toolbox is needed. 
 
-#Logging of task progress
+# Logging of task progress
 The logging directory is chosen in the config file, and by default is 
 located at derivatives/logs where each subject its logs in /<subject>/ 
 The bids validation report is located in the root of the log directory since the whole bids tree is validated at once.  
@@ -69,7 +69,7 @@ at the very end of the log file the global options are appended in a line. this 
 In the subject log folder, there will be one file <subj>_<task name>.log for each task that was ran. This file contains all log prints from the execution, and error messages. 
 There are also a file for each shell command that was executed by these tasks. these are named similarly, for example <subj>_call_cat12.log, these include all output from stdout and stderr from the execution of the commands. 
 
-#Dependencies
+# Dependencies
 This package runs a number of external programs, executables and toolboxes that are needed. 
 
 - Python 3.7+ with the pip packages mentioned in requirements.txt
@@ -82,7 +82,7 @@ This package runs a number of external programs, executables and toolboxes that 
 - freesurfer
 - fMRIPREP (WIP)
 
-#Description of the BIDS errors that are fixed
+# Description of the BIDS errors that are fixed
 
 - Leftover files that arent needed are deleted. e.g. *heudiconv* files, *ADC* files..
 - Anatomical MRI images that had the data dimensions wrong are fixed
@@ -94,11 +94,10 @@ This package runs a number of external programs, executables and toolboxes that 
 - <subj>-scans is updated for each deleted or renamed file
 - participants.tsv is updated for each subject added to the new tree
 
-s
-#Future features that could be added 
+# Future features that could be added 
 
--Import the B1 fieldmap and use it to compute MP2RAGE files
--Output valid json sidecar files for the derivative nifti files
--Calculate Phase Encoding Direction
--Write SliceTiming for the fMRI files
--Shell program logs could be included in the task output log
+- Import the B1 fieldmap and use it to compute MP2RAGE files
+- Output valid json sidecar files for the derivative nifti files
+- Compute Phase Encoding Direction without needing to define it manually
+- Write SliceTiming for the fMRI files
+- Shell program logs could be included in the task output log
