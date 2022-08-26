@@ -15,7 +15,7 @@ from create_derivs import quit_module, spm12_module
 
 #this program was written by Axel Landgren for Region Skåne, for questions: 
 #axel.landgren@skane.se  
-#or @gmail
+#or gmail
 
 def dicom_convert(runner):
 	"""
@@ -27,11 +27,10 @@ def dicom_convert(runner):
 	subj = runner.subj
 	#TODO: allow use of global "orig_bids_root" option, requires mod script.  
 	log_print("running dicom convert on " + subj)
-	code_path = os.path.dirname(os.path.relpath(__file__))
 	sh_cmd = "{}/DcmSourcedata_to_NiftiRawdata.sh".format(runner.code_path)
 	short_subj = subj[4:]
 	runner.sh_run("{}/DcmSourcedata_to_NiftiRawdata.sh".format(runner.code_path), short_subj)	
-	
+
 def fix_bids_task(runner):
 	"""
 	task to fix the bids free from validation errors. 
@@ -118,11 +117,14 @@ class log_item():
 		
 		a log item is created at the point in time when a task starts.
 		It is not written to disk until the task is finished or failed. 
+
+		argument:
+			- runner: parent task_runner context
+
 		"""
 		s.runner = runner
 		subj = runner.subj
 		s.task = runner.cur_task
-		#store start time
 		s.t0 = datetime.datetime.now()
 		#pass the running log file to bids_util so the prints will go there
 		task_log_file_name = "{}/logs/{}/{}_{}.log".format(
@@ -314,6 +316,8 @@ class task_runner():
 		s.subj = None
 		s.cur_task = None
 		s.code_path = os.path.dirname(os.path.relpath(__file__))
+		if(s.code_path == ""):
+			s.code_path = "."
 		s.dummy_run = dummy
 		
 		if(json_config==None):
@@ -371,10 +375,8 @@ class task_runner():
 			s.task_config = s.config[task_name]
 			s.avail_tasks[task_name](s)
 		except Exception as e:
-			#write exceptions to log and quit 
 			print("Error: Task error: " + str(e))
 			task_log.write_error(str(e))
-			sys.exit()
 		#write to log
 		task_log.close()
 

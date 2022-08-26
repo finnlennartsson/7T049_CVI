@@ -3,10 +3,7 @@ from bids_util import log_print
 
 class fix_func:
 	"""
-	class for fixing the func folder
-	
-	fix 4: slice timing not defined for func
-	fix warning av TSV file columns
+	class for fixing the func folder bids errors
 	"""
 	
 	def __init__(s, runner):
@@ -16,20 +13,19 @@ class fix_func:
 		"""
 		s.name = "func"
 		s.bids_out = runner.get_task_conf("bids_output")
-		s.subj = runner.subj
 		s.ap_ph_enc_dir = runner.get_task_conf("epi_ap_ph_enc_dir")
-		s.dicom_dir = "./sourcedata/{}/*fmri_8bars*/".format(s.subj) 
-		#first half of each bids fileanme
-		s.root_folder = "{}/{}/{}/".format(s.bids_out, s.subj, s.name)
-		s.part_filename = s.root_folder + s.subj
-		s.blacklist=[]
+		s.dicom_dir = "./sourcedata/{}/*fmri_8bars*/".format(runner.subj) 
+		s.root_folder = "{}/{}/{}/".format(s.bids_out, runner.subj, s.name)
+		#s.part_filename = s.root_folder + s.subj
 	
 	def fix_tsv_column_desc(s):
-		log_print("TODO: fix missing column desc in tsv file")
-	
+		#TODO: fix missing column desc in tsv file"
+		return
+		
 	def add_missing_json_data(s):
-		log_print("TODO: implement SliceTiming, currently done in .bidsignore")
-	
+		#TODO: implement SliceTiming
+		return 
+
 	def execute(s):
 		"""
 			executed in fix_bids_tree.py
@@ -39,7 +35,7 @@ class fix_func:
 			s.fix_tsv_column_desc()
 			s.add_missing_json_data()
 		except Exception as e:
-			log_print("fix_fmap failed with: " + str(e), force=True)
+			log_print("fix_func failed with: " + str(e), force=True)
 		
 class fix_dwi:
 	"""
@@ -58,12 +54,10 @@ class fix_dwi:
 		"""
 		s.name = "dwi"
 		s.bids_out = runner.get_task_conf("bids_output")
-		s.subj = runner.subj
 		s.ap_ph_enc_dir = runner.get_task_conf("epi_ap_ph_enc_dir")
-		s.dicom_dir = "./sourcedata/{}/*dmri*/".format(s.subj) 
-		#first half of each bids fileanme
-		s.root_folder = "{}/{}/{}/".format(s.bids_out, s.subj, s.name)
-		s.part_filename = s.root_folder + s.subj
+		s.dicom_dir = "./sourcedata/{}/*dmri*/".format(runner.subj) 
+		s.root_folder = "{}/{}/{}/".format(s.bids_out, runner.subj, s.name)
+		s.part_filename = s.root_folder + runner.subj
 		s.blacklist=[s.part_filename + "*heudiconv*ADC*"]
 		
 	def execute(s):

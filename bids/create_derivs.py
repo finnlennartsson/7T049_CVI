@@ -37,7 +37,6 @@ class spm12_module:
 		arguments:
 			- runner: task_runner parent 
 		"""
-		print(runner.task_config)
 		s.runner = runner
 		s.subj = runner.subj
 		s.use_quit = runner.config["mask_remove_bg"]["use_quit"]
@@ -50,9 +49,12 @@ class spm12_module:
 		s.output_pre = s.runner.get_deriv_folder("spm12", "anat")
 		
 		s.input_inv2_pre =  s.runner.get_deriv_folder("pymp2rage", "anat")
-		s.input_inv2 = s.input_inv2_pre +  "/{}_acq-mp2rage_inv2_magnitude.nii.gz".format(s.subj)
+		s.input_inv2 = s.input_inv2_pre +  "/{}_run-1_inv-2_part-mag_MP2RAGE.nii.gz".format(s.subj)
 		s.input_pre = s.runner.get_deriv_folder(s.src_dir, "anat")
-		s.input_t1w = s.input_pre + "/{}_acq-mp2rage_run-1_UNI.nii.gz".format(s.subj)	
+		s.input_t1w = s.input_pre + "/{}_run-1_desc-{}_UNIT1.nii.gz".format(s.subj, s.src_dir)	
+		
+		#TODO: UNIT1 or T1w?
+		s.unit1_no_bg = s.input_pre + "/{}_run-1_desc-{}noBackground_UNIT1.nii.gz".format(s.subj, s.src_dir)
 		
 	def make_bet_mask(s):
 		"""
@@ -63,8 +65,8 @@ class spm12_module:
 		log_print ("using BET for masking on " + s.src_dir + " intensity " + str(bet_intensity)) 
 		s.runner.create_derivatives_destination("bet", "anat")
 		bet_out_path = s.runner.get_deriv_folder("bet", "anat")
-		bet_output_file = bet_out_path + "/{}_acq-bet.nii.gz".format(s.subj)
-		s.mask_output_file = bet_out_path + "/{}_acq-bet_mask.nii.gz".format(s.subj)
+		bet_output_file = bet_out_path + "/{}_run-1_desc-bet.nii.gz".format(s.subj)
+		s.mask_output_file = bet_out_path + "/{}_run-1_desc-bet_mask.nii.gz".format(s.subj)
 		s.runner.sh_run("bet", s.input_inv2, bet_output_file, "-m -f {}".format(bet_intensity))
 
 	def make_spm12_mask(s):
@@ -72,15 +74,15 @@ class spm12_module:
 		execute spmmask create a brain mask. slower and less flexible than bet.  
 		"""
 		log_print("call_spmmask using " + s.src_dir)
-		s.mask_output_file = s.output_pre + "/{}_acq-spm12_{}_mask.nii.gz".format(s.subj, s.src_dir)
+		s.mask_output_file = s.output_pre + "/{}_run-1-_desc-{}_mask.nii.gz".format(s.subj, s.src_dir)
 		s.runner.sh_run("call_spmmask -s {} ".format(s.spm12_path), s.input_t1w, s.mask_output_file, " y")
 		
 	def remove_background(s):
 		"""
 		use a precomputed mask to remove the background of the t1w image. 
 		"""
-		log_print("applying mask and removing bg on" + s.input_t1w)
-		t1w_output_file = s.output_pre + "/{}_acq-{}-UNI_no_bg.nii.gz".format(s.subj, s.src_dir)
+		log_print("applying mask and removing bg on " + s.input_t1w)
+		t1w_output_file = s.unit1_no_bg
 		
 		t1w = image.load_img(s.input_t1w)
 		t1w_mask = resample_affine(s.input_t1w, s.mask_output_file)
@@ -106,11 +108,9 @@ class spm12_module:
 		"""
 		log_print("running cat12 on " + s.src_dir + " data" )
 		input_pre = s.runner.get_deriv_folder("spm12", "anat")
-		input_file_no_bg = "/{}_acq-{}-UNI_no_bg.nii.gz".format(s.subj, s.src_dir)
 		output_cat_dir = s.runner.get_deriv_folder("cat12", "anat")
 		tmp_input = ".input_no_bg.nii.gz"
-		#os.rename(s.runner.sh_run("cp", input_pre + input_file_no_bg, tmp_input, no_log=True)
-		os.rename(input_pre + input_file_no_bg, tmp_input)
+		os.rename(s.unit1_no_bg, tmp_input)
 		s.runner.sh_run("call_cat12 -s {} ".format(s.spm12_path), tmp_input, output_cat_dir)
 		os.remove(tmp_input)
 		
@@ -133,7 +133,7 @@ class quit_module():
 		s.deriv_quit_folder = runner.get_deriv_folder("quit", "anat")
 		
 		s.sc_pre_str = "anat/{}".format(s.subj)
-		s.quit_complex_input = s.deriv_quit_folder + "/{}_run-1_inv_1and2_MP2RAGE".format(s.subj)
+		s.quit_complex_input = s.deriv_quit_folder + "/{}_run-1_desc_inv1and2_MP2RAGE".format(s.subj)
 	
 	def create_QUIT_nifti(s):
 		"""
@@ -165,17 +165,18 @@ class quit_module():
 			https://quit.readthedocs.io/en/latest/Docs/Relaxometry.html#qi-mp2rage
 			
 		"""
-		quit_complex_input = s.deriv_quit_folder + "/{}_run-1_inv_1and2_MP2RAGE".format(s.subj)
-		
 		mp2rage_json_file = s.runner.code_path + "/mp2rage_parameters.json"
-		qi_cmd = "qi mp2rage {} < {}".format(quit_complex_input, mp2rage_json_file)
+		qi_cmd = "qi mp2rage {} < {}".format(s.quit_complex_input, mp2rage_json_file)
 		s.runner.sh_run(qi_cmd)
 		for out in ("UNI", "T1"):
 			src = "MP2_{}.nii.gz".format(out)
 			dest = s.deriv_quit_folder + "/{}_acq-mp2rage_run-1_{}.nii.gz".format(s.subj, out)
 			log_print(dest)
-			os.rename(src, dest)
+		dest = s.deriv_quit_folder + "/{}_run-1_desc-quit_UNIT1.nii.gz".format(s.subj)
+		os.rename("MP2_UNI.nii.gz", dest)
+		dest = s.deriv_quit_folder + "/{}_run-1_desc-quit_rec_T1map_MP2RAGE.nii.gz".format(s.subj)
+		os.rename("MP2_T1.nii.gz", dest)
 
 if __name__ == "__main__":
-	print("run with pipeline.py -t <mp2rage or mask_remove_bg> <subj> -c <conf.json>")
+	print("run with pipeline.py -c <conf.json> -t <mp2rage or mask_remove_bg> <subj>")
 	

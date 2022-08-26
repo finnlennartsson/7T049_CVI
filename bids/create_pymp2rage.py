@@ -30,11 +30,13 @@ class pymp2rage_module():
 		"""
 		
 		pymp2rage_pre = s.runner.get_deriv_folder("pymp2rage", "anat")
-		if(part == "UNI"):
-			return pymp2rage_pre + "/{}_acq-mp2rage_run-{}_UNI.nii.gz".format(s.subj, str(inv)) 
+		if(part == "UNIT1"):
+			return pymp2rage_pre + "/{}_run-1_desc-pymp2rage_{}.nii.gz".format(s.subj, part) 
 		if(part == "T1"):
-			return pymp2rage_pre + "/{}_acq-mp2rage_run-{}_T1.nii.gz".format(s.subj, str(inv)) 
-		return pymp2rage_pre + "/{}_acq-mp2rage_inv{}_{}.nii.gz".format(s.subj, str(inv), part) 
+			return pymp2rage_pre + "/{}_run-1_desc-pymp2rage_rec-T1map_MP2RAGE.nii.gz".format(s.subj) 
+		if(part == "complex"):
+			return pymp2rage_pre + "/{}_run-1_inv-{}_MP2RAGE.nii.gz".format(s.subj, str(inv)) 
+		return pymp2rage_pre + "/{}_run-1_inv-{}_part-{}_MP2RAGE.nii.gz".format(s.subj, str(inv), str(part)) 
 
 	def create_pymp2rage_input_files(s):
 		"""
@@ -55,16 +57,16 @@ class pymp2rage_module():
 		s.runner.sh_run("fslcomplex -complex",  real_1and2 + " " + imag_1and2, cplx_1, " 0 0")
 		s.runner.sh_run("fslcomplex -complex",  real_1and2 + " " + imag_1and2, cplx_2, " 1 1")
 
-		inv2_mag = s.get_filename(2, "magnitude")
+		inv2_mag = s.get_filename(2, "mag")
 		inv2_phase = s.get_filename(2, "phase")
 
 		log_print("getting magnitude and phase for inv 1")
-		inv1_mag = s.get_filename(1, "magnitude")
+		inv1_mag = s.get_filename(1, "mag")
 		inv1_phase = s.get_filename(1, "phase")
 		s.runner.sh_run("fslcomplex -realpolar ", cplx_1, inv1_mag + " " + inv1_phase)
 		
 		log_print("getting magnitude and phase for inv 2")
-		inv2_mag = s.get_filename(2, "magnitude")
+		inv2_mag = s.get_filename(2, "mag")
 		inv2_phase = s.get_filename(2, "phase")
 		s.runner.sh_run("fslcomplex -realpolar ", cplx_2, inv2_mag + " " + inv2_phase)
 
@@ -83,11 +85,11 @@ class pymp2rage_module():
 		https://github.com/Gilles86/pymp2rage/blob/master/pymp2rage/mp2rage.py
 		"""
 		log_print("calculating pyMP2RAGE..")
-		inv1_mag = s.get_filename(1, "magnitude")
+		inv1_mag = s.get_filename(1, "mag")
 		inv1_phase = s.get_filename(1, "phase")
-		inv2_mag = s.get_filename(2, "magnitude")
+		inv2_mag = s.get_filename(2, "mag")
 		inv2_phase = s.get_filename(2, "phase")
-	#   B1_fieldmap=<insert fieldmap file here>
+	#TODO:   B1_fieldmap=<insert fieldmap file here>
 
 	#use default settings now to prevent crashing
 		mp2_obj = pymp2rage.MP2RAGE(
@@ -106,8 +108,8 @@ class pymp2rage_module():
 		#    t1w_uni (Nifti1Image): Bias-field corrected T1-weighted image
 		#    t1map_masked (Nifti1Image): Quantitative T1 map, masked
 		#    t1w_uni_masked (Nifti1Image): Bias-field corrected T1-weighted map, masked
-		nib.save(mp2_obj.t1w_uni, s.get_filename(1, "UNI"))
-		log_print("saved " + s.get_filename(1, "UNI"))
+		nib.save(mp2_obj.t1w_uni, s.get_filename(1, "UNIT1"))
+		log_print("saved " + s.get_filename(1, "UNIT1"))
 		nib.save(mp2_obj.t1map, s.get_filename(1, "T1"))
 		log_print("saved " + s.get_filename(1, "T1"))
 

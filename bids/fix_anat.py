@@ -37,9 +37,8 @@ class fix_anat:
 		
 		s.quit_complex_input = s.deriv_quit_folder + "/{}_run-1_inv_1and2_MP2RAGE".format(s.subj)
 		#these are the files to be deleted
-		s.blacklist=[s.part_filename + "*heudiconv141*", 
-					s.part_filename + "*1and2*",
-					s.part_filename + "*run-2_FLAIR*"]
+		s.blacklist=[s.part_filename + "*heudiconv*", 
+					s.part_filename + "*inv-1and2*"]
 
 	#update the BIDS json file
 	def update_json_shape2(s, nii, input_json_file, output_json_file):
@@ -91,27 +90,6 @@ class fix_anat:
 		log_print("wrote " + input_nii_file)
 		os.remove(temp_file)
 
-	def create_QUIT_nifti(s):
-		"""
-			creates a new file in derivatives that is the input data for QUIT 
-			MP2RAGE and T1 calculation.   
-		"""
-		real_filename = s.part_filename + "_run-1_inv-1and2_part-real_MP2RAGE"
-		imag_filename = s.part_filename + "_run-1_inv-1and2_part-imag_MP2RAGE"
-		output_file = s.quit_complex_input
-		im_nii = nib.load(real_filename + ".nii.gz")
-		im_nii_data = im_nii.get_fdata()
-		re_nii = nib.load(imag_filename + ".nii.gz")
-		re_nii_data = re_nii.get_fdata()
-		quit_data = np.zeros(re_nii_data.shape)
-		quit_data = re_nii_data + im_nii_data*1j
-		
-		quit_nii = nib.Nifti1Image(quit_data, re_nii.affine)
-		u_xyz, u_t = re_nii.header.get_xyzt_units()
-		quit_nii.header.set_xyzt_units(u_xyz, u_t)
-		bids_util.update_json_shape(quit_nii, real_filename + ".json", output_file + ".json")
-		nib.save(quit_nii, output_file + ".nii.gz")
-
 	def get_separate_nii(s, input_nii_file, inv_index):
 		nii = nib.load(input_nii_file)
 		nii_data = nii.get_fdata()
@@ -122,7 +100,11 @@ class fix_anat:
 		nii_inv.header.set_xyzt_units(u_xyz, u_t)
 		return nii_inv
 
-	def split_mp2rage_niftis(s):
+	def split_combined_niftis(s):
+		"""
+		create new nifti files based on the run-1_inv-1and2 files
+		for each inversion time. 
+		"""
 		#lets assume we only have one run for now
 		run = 1
 		for part in ['real', 'imag']:
@@ -165,7 +147,7 @@ class fix_anat:
 		"""
 			performs all fixes for anat folder and updates scans.tsv file.
 		"""
-		s.split_mp2rage_niftis()
+		s.split_combined_niftis()
 		s.reshape_UNIT1_dims()
 		
 		#fix the <subj>_scans.tsv file
@@ -175,8 +157,7 @@ class fix_anat:
 		bids_util.rename_scan_file(s.sc_pre_str + "_run-1_inv-1and2_part-real_MP2RAGE.nii.gz"
 			, [s.sc_pre_str + "_run-1_inv-1_part-real_MP2RAGE.nii.gz",
 			s.sc_pre_str + "_run-1_inv-2_part-real_MP2RAGE.nii.gz"])
-		bids_util.delete_scan_file(s.sc_pre_str + "_run-2_FLAIR.nii.gz")
-		bids_util.delete_scan_file(s.sc_pre_str + "_run-1_inv-1and2_MP2RAGE.nii.gz")
+		
 		#delete unwanted files
 		for f in s.blacklist:
 			bids_util.wildcard_delete(f)

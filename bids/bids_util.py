@@ -10,7 +10,8 @@ import json
 import subprocess
 import pydicom
 
-"""various utility functions to clean up the implementation of 
+"""
+various utility functions to clean up the implementation of 
 fix_bids_tree.py
 """
 
@@ -114,16 +115,12 @@ def delete_scan_file(f):
 	"""
 	global scans_lines, new_lines
 	new_lines = [] 
-	found = False
 	for line in scans_lines:
 		line_file, rest_line  = line.split('\t', 1)
 		if(f == line_file):
-			log_print("--Removed " + f)
-			found = True
+			log_print("--Removed " + f + " from scans.tsv")
 		else:
 			new_lines.append(line)
-	if not found:
-		log_print("Error: didnt find " + f, force=True)
 	scans_lines = new_lines
 	
 def rename_scan_file(src, dests):
@@ -227,7 +224,11 @@ def wildcard_delete(f_wc):
 		try:
 			os.remove(f)
 			f_ct += 1
+			p1, p2, scans_name  = f.split('/', 2)
+			#try to remove the deleted file from <subj>_scans.tsv
+			#this will fail for json files, but no matter. 
+			delete_scan_file(scans_name)
 		except:
-			log_print("Error while deleting file : " + f, force=True)
+			pass
 	log_print(str(f_ct) + " files deleted")
 	

@@ -16,6 +16,12 @@ from fix_other import fix_dwi, fix_func
 from create_pymp2rage import pymp2rage_module
 from create_derivs import quit_module
 
+"""
+routines used by the fix_bids task, which populates a new bids tree root 
+at ["bids_output"] based on the tree at ["global"]["orig_bids_root"]. 
+
+should result in a bids validation log that shows no errors. 
+"""
 
 def add_subject_to_participants(runner):
 	"""
@@ -28,7 +34,7 @@ def add_subject_to_participants(runner):
 		- runner: task_runner parent 
 	"""
 	old_part_tsv = "{}/participants.tsv".format(runner.get_global("orig_bids_root"))
-	#find the current subjects line in old particpants.tsv
+	#first find the current subjects line in old particpants.tsv
 	found = False
 	try:
 		with open(old_part_tsv, 'r') as f:
@@ -45,11 +51,14 @@ def add_subject_to_participants(runner):
 		if not found:
 			raise(Exception("Participant {} not in participants.tsv".format(runner.subj)))
 	except Exception as e:
-		log_print(str(e), force=True)
-		sys.exit()
+		log_print(str(e))
+		sys.exit(str(e))
+	#then try to find the line in the new participants.tsv
+	#(fix bids might have been run before and we dont want two lines)
 	new_part_tsv = "{}/participants.tsv".format(runner.get_task_conf("bids_output"))
 	try:
 		if not os.path.exists(new_part_tsv):
+			#if the file dont exist yet, create it
 			log_print("creating new " + new_part_tsv, force=True)
 			with open(new_part_tsv, 'w') as f:
 				participant_header = "participant_id\tage\tsex\tgroup\n"
@@ -63,17 +72,19 @@ def add_subject_to_participants(runner):
 						subj_name, rest_line  = read_line.split('\t', 1)
 						if(subj_name == runner.subj):
 							found = True
+							#the line was already there, no changes
+							#TODO: maybe delete old line and copy again?
 							break
 					except Exception as e:
 						#ignore non tab lines
 						pass
 			if not found:
+				#it was not found, add the line
 				with open(new_part_tsv, 'a') as f:
 					f.write(f"{subj_part_line}")
 					print("appended to " + new_part_tsv)
 	except Exception as e:
 		log_print("failed to update participants.tsv: " + str(e), force=True)
-		sys.exit()
 
 def copy_to_new_tree(runner, f):
 	"""
@@ -127,7 +138,7 @@ def update_bids_ignore(bids_root):
 	"""
 	with open(bids_root + '/.bidsignore', 'w') as f:
 		f.write("#Ignore certain warnings\n")
-		#f.write('./*.tsv\n')
+		f.write('./*.tsv\n')
 	log_print("Wrote .bidsignore")
 
 def run_validator(runner):

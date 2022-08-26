@@ -47,34 +47,6 @@ class fix_fmap:
 		out_file.close()
 		os.rename(json_file_temp, json_file)
 	
-	def calc_total_readout_time(s, se_dir):
-		"""
-		read DICOM files to get phase encoding direction and  
-		calculate total readout time according to 
-		https://osf.io/xvguw/wiki/home/?view_only=6887e555825743c7bbdfce114500fb8d
-		
-		arguments.
-			se_dir: either PA or AP. affects which file to edit. 
-		"""
-		
-		dcm_file = glob.glob("./sourcedata/{}/*fmap*dir-{}*/*.dcm".format(s.subj, se_dir))[0]
-		print("reading header from " + dcm_file)
-		ds = pydicom.read_file(dcm_file)
-		if(ds[0x0018, 0x1312].value == 'COL'): #'InPlanePhaseEncodingDirection'
-			#TODO: fix correct phase encoding readout
-			phase_encoding_dir =  'j' if se_dir == "PA" else 'j-'
-		else:
-			print("ERROR: unknown phase encoding direction in DICOM files")
-			phase_encoding_dir =  'Error' 
-		water_fat_shift = ds[0x2001, 0x1022].value #'WaterFatShift'
-		imag_freq = ds[0x0018, 0x0084].value #'ImagingFrequency'
-		epi_factor = ds[0x2001, 0x1013].value #'EPIFactor'
-		actual_echo_spacing = water_fat_shift / (imag_freq * 3.4
-								* (epi_factor + 1))
-		total_readout_time = actual_echo_spacing * epi_factor
-		print("calculated total readout time as " +  str(total_readout_time))
-		return phase_encoding_dir, total_readout_time
-	
 	def add_missing_se_data(s):
 		"""
 		add the missing json config for the SE fieldmap. This includes
@@ -101,6 +73,7 @@ class fix_fmap:
 				os.rename(json_file_temp, json_file)
 			except Exception as e:
 				log_print(str(e), force=True)
+				
 	def rename_gre_fmap(s):
 		"""
 		function to make sure the GRE fieldmap files are named
@@ -130,7 +103,12 @@ class fix_fmap:
 		"""
 		bids_util.update_epi_json_files(s.root_folder, s.dicom_dir, s.epi_ap_ph_enc_dir)
 		s.rename_gre_fmap()
-		s.add_missing_se_data()
+		func_path = "{}/{}/{}/".format(s.bids_out, s.subj, "func")
+		if(os.path.exists(func_path)):
+			s.add_missing_se_data()
+		else:
+			log_print("not adding IntendedFor due to missing fMRI data")
+			
 		s.add_missing_gre_data()
 		bids_util.rename_scan_file(s.sc_pre_str + "_acq-gre_dir-AP_run-1_epi1.nii.gz",
 				[s.sc_pre_str + "_acq-gre_run-1_fieldmap.nii.gz"])
