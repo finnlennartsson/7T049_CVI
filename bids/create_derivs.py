@@ -174,7 +174,7 @@ class quit_module():
 			log_print(dest)
 		dest = s.deriv_quit_folder + "/{}_run-1_desc-quit_UNIT1.nii.gz".format(s.subj)
 		os.rename("MP2_UNI.nii.gz", dest)
-		dest = s.deriv_quit_folder + "/{}_run-1_desc-quit_rec_T1map_MP2RAGE.nii.gz".format(s.subj)
+		dest = s.deriv_quit_folder + "/{}_run-1_desc-quit_T1map.nii.gz".format(s.subj)
 		os.rename("MP2_T1.nii.gz", dest)
 
 if __name__ == "__main__":

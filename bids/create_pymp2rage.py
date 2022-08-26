@@ -30,10 +30,8 @@ class pymp2rage_module():
 		"""
 		
 		pymp2rage_pre = s.runner.get_deriv_folder("pymp2rage", "anat")
-		if(part == "UNIT1"):
+		if(part == "UNIT1") or (part == "T1map"):
 			return pymp2rage_pre + "/{}_run-1_desc-pymp2rage_{}.nii.gz".format(s.subj, part) 
-		if(part == "T1"):
-			return pymp2rage_pre + "/{}_run-1_desc-pymp2rage_rec-T1map_MP2RAGE.nii.gz".format(s.subj) 
 		if(part == "complex"):
 			return pymp2rage_pre + "/{}_run-1_inv-{}_MP2RAGE.nii.gz".format(s.subj, str(inv)) 
 		return pymp2rage_pre + "/{}_run-1_inv-{}_part-{}_MP2RAGE.nii.gz".format(s.subj, str(inv), str(part)) 
@@ -110,8 +108,8 @@ class pymp2rage_module():
 		#    t1w_uni_masked (Nifti1Image): Bias-field corrected T1-weighted map, masked
 		nib.save(mp2_obj.t1w_uni, s.get_filename(1, "UNIT1"))
 		log_print("saved " + s.get_filename(1, "UNIT1"))
-		nib.save(mp2_obj.t1map, s.get_filename(1, "T1"))
-		log_print("saved " + s.get_filename(1, "T1"))
+		nib.save(mp2_obj.t1map, s.get_filename(1, "T1map"))
+		log_print("saved " + s.get_filename(1, "T1map"))
 
 if __name__ == "__main__":
 	print("This file is no longer executable")
