@@ -55,12 +55,14 @@ def infotodict(seqinfo):
     fmap_gre_ap = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_epi')
     #fmap_gre_ap_mag = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_magnitude')
     #fmap_gre_ap_phase = create_key('sub-{subject}/fmap/sub-{subject}_acq-gre_dir-AP_run-{item:01d}_phasediff')
+    fmap_b1 = create_key('sub-{subject}/fmap/sub-{subject}_acq-b1_run-{item:01d}_epi')
     
-    info = {t1wmp2rage_real: [],t1wmp2rage_imag: [],t1wmp2rage_inv: [],t1wmp2rage_mp2rage: [], flair: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap: []}
+    #info = {t1wmp2rage_real: [],t1wmp2rage_imag: [],t1wmp2rage_inv: [],t1wmp2rage_mp2rage: [], flair: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], fmap_se_pa: [], fmap_gre_ap: [], fmap_b1: []}
+    info = {t1wmp2rage_real: [],t1wmp2rage_imag: [],t1wmp2rage_inv: [],t1wmp2rage_mp2rage: [],
+        flair: [], dwi_ap: [], dwi_pa: [], fmri_8bars: [], fmap_se_ap: [], 
+        fmap_se_pa: [], fmap_gre_ap: [], fmap_b1: []}
     
     for idx, s in enumerate(seqinfo):
-        
-        
         # ANATOMY
         # T1w - MP2RAGE
         if ('real' in s.series_description) and not (s.is_derived):
@@ -88,7 +90,11 @@ def infotodict(seqinfo):
         if ('NOT YET SORTED' in s.series_description) and (s.image_type[2] == 'P'):
             # phase image
             info[fmap_gre_ap_phase].append(s.series_id) #
-            
+        #Get B1 fieldmap
+        #TODO: this tends to overwrite the other fmap files, dont know why. 
+        #if ('B1map_dual_TR' in s.series_description):
+        #    info[fmap_b1].append(s.series_id)
+        
         # se-fieldmap
         if ('fmap_acq-se_dir-AP' in s.series_description):
             info[fmap_se_ap].append(s.series_id) # assign if a single series meets criteria
