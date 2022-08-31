@@ -47,7 +47,7 @@ usage: pipeline.py [-h] [-v] [-c CONFIG] [-t TASK] [-d]
  - -c, --config: choose a json configuration file, see below
  - -t, --task: name a task to execute, selected from the task list below. more can be easily added but requires changed in pipeline.py at the moment. 
  - -d, --dummy: dont actually execute any shell commands, for testing purposes
- - subject list: one or more subject labels, including "sub-", separated by space.   
+ - subject list: one or more subject labels, incluNOT including "sub-", separated by space.   
 
 if no task is set, the sequence of tasks in task_list in the config file is used. 
 if no subject list is provided, the list of subjects in subj_list in the config file is used. 
