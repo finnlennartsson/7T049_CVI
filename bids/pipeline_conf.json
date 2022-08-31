@@ -1,8 +1,8 @@
 {
-	"subj_list": ["sub-7T049C10"],
+	"subj_list": ["7T049C10"],
 	"task_list": ["fix_bids", "mp2rage", "mask_remove_bg"],
 	"global": {
-		"config_nasme": "QUIT, no FS",	
+		"config_name": "QUIT, no FS",	
 		"orig_bids_root": "rawdata",
 		"deriv_folder": "derivatives",
 		"log_folder": "logs",

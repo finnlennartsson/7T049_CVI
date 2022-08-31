@@ -137,8 +137,7 @@ def update_bids_ignore(bids_root):
 			-bids_root
 	"""
 	with open(bids_root + '/.bidsignore', 'w') as f:
-		f.write("#Ignore certain warnings\n")
-		f.write('./*.tsv\n')
+		f.write("#Add files to ignore here\n")
 	log_print("Wrote .bidsignore")
 
 def run_validator(runner):

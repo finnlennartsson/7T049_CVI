@@ -104,7 +104,11 @@ def freesurfer_task(runner):
 		- runner: parent task_runner context
 	"""
 	subj = runner.subj
-	fs_out_dir = runner.create_derivatives_destination("freesurfer", "anat")
+	fs_out_dir = runner.get_global("deriv_folder") + "/freesurfer"
+	try:
+		os.makedirs(fs_out_dir)
+	except:
+		pass
 	cat12_no_bg_nif = runner.get_deriv_folder("cat12", "anat") + "/mi.input_no_bg.nii.gz"
 	fs_cmd = "recon-all -subjid {} -i {} -sd {}".format(subj, cat12_no_bg_nif, fs_out_dir)
 	#TODO: do i need to pass the license file? read from environmental vars?
@@ -244,12 +248,11 @@ class task_runner():
 		except:
 			first_cmd = cmd
 		cmd_only = os.path.basename(first_cmd)
-		log_dir = "{}/logs/{}".format(
-			s.get_global("deriv_folder"), s.subj)
+		log_dir = "{}/logs/{}".format(s.get_global("deriv_folder"), s.subj)
 		pipe = "" if no_log else ">{}/{}_{}.log 2>&1".format(log_dir, s.subj, cmd_only)
 		
 		cmd = "{} {} {} {} {}".format(cmd, in_arg, out_arg, extra, pipe)
-		log_print(cmd)
+		log_print("executing '{}'{}".format(cmd, " NO LOG" if no_log else ""))
 		if(not s.dummy_run):
 			subprocess.run([cmd], shell=True)
 		else:
@@ -350,7 +353,10 @@ class task_runner():
 		arguments:
 			subj: a subject, typically from a list
 		"""
-		s.subj = subj
+		s.subj = "sub-" + subj 
+		if (not bids_util.find_subject(s.get_global("orig_bids_root"), s.subj)):
+			print("Error: Invalid subject {}".format(subj))
+			return
 		for task in s.task_list:
 			s.execute_task(task)
 
@@ -364,8 +370,13 @@ class task_runner():
 			task_name: a task that will be logged, must have a corresponding 
 			task function in the list of tasks.  
 		"""
-		
 		try:
+			task_function = s.avail_tasks[task_name] 
+		except: 
+			print("Error: Invalid task " + task_name)
+			return
+		try:
+			#fail early if illegal task so we dont log non existing tasks
 			log_print("running {} for {}".format(task_name, s.subj), force=True)
 			log_dir = "{}/logs/{}".format(s.get_global("deriv_folder"), s.subj)
 			if not os.path.exists(log_dir):
@@ -373,7 +384,7 @@ class task_runner():
 			s.cur_task = task_name
 			task_log = log_item(s)
 			s.task_config = s.config[task_name]
-			s.avail_tasks[task_name](s)
+			task_function(s)
 		except Exception as e:
 			print("Error: Task error: " + str(e))
 			task_log.write_error(str(e))
@@ -401,7 +412,9 @@ def main():
 	print(args)
 	#check if task is in there
 	runner = task_runner(args.config, args.task, dummy=args.dummy, verbose=args.verbose)
-	if(args.subj_list == []):
+	if(args.subj_list == []) and (not args.config == []):
+		sys.exit("Either subject list or config file must be set")
+	elif (args.subj_list == []):
 		print("using subject list from conf: " + str(runner.config["subj_list"]))
 		subj_list = runner.config["subj_list"]
 	else:

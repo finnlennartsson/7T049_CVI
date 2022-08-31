@@ -74,7 +74,7 @@ class spm12_module:
 		execute spmmask create a brain mask. slower and less flexible than bet.  
 		"""
 		log_print("call_spmmask using " + s.src_dir)
-		s.mask_output_file = s.output_pre + "/{}_run-1-_desc-{}_mask.nii.gz".format(s.subj, s.src_dir)
+		s. mask_output_file = s.output_pre + "/{}_run-1_desc-{}_mask.nii.gz".format(s.subj, s.src_dir)
 		s.runner.sh_run("call_spmmask -s {} ".format(s.spm12_path), s.input_t1w, s.mask_output_file, " y")
 		
 	def remove_background(s):
@@ -90,13 +90,15 @@ class spm12_module:
 		
 		mask = image.math_img('(t1w_mask > 0)', t1w_mask=t1w_mask)
 		#old tomas knapen/jurjen masking method
-		#new_t1w = image.math_img('t1w * t1w_mask * np.mean(inv2[t1w_mask == 1]/np.max(inv2))'
-		#							'+ t1w * inv2/np.max(inv2) * (1-t1w_mask)',
+		new_t1w = image.math_img('t1w * t1w_mask * np.mean(inv2[t1w_mask == 1]/np.max(inv2))'
+									'+ t1w * inv2/np.max(inv2) * (1-t1w_mask)',
+								t1w=t1w,
+								t1w_mask=mask,
+								inv2=inv2)
+		
 		#using simple binary masking instead
-		new_t1w = image.math_img('t1w * t1w_mask',
-									t1w=t1w,
-									t1w_mask=mask,
-									inv2=inv2)
+		#new_t1w = image.math_img('t1w * t1w_mask',
+		
 		new_t1w.to_filename(t1w_output_file)
 		log_print("saved " + t1w_output_file)
 
@@ -110,7 +112,8 @@ class spm12_module:
 		input_pre = s.runner.get_deriv_folder("spm12", "anat")
 		output_cat_dir = s.runner.get_deriv_folder("cat12", "anat")
 		tmp_input = ".input_no_bg.nii.gz"
-		os.rename(s.unit1_no_bg, tmp_input)
+		#use cp not rename
+		shutil.copy(s.unit1_no_bg, tmp_input)
 		s.runner.sh_run("call_cat12 -s {} ".format(s.spm12_path), tmp_input, output_cat_dir)
 		os.remove(tmp_input)
 		
@@ -133,7 +136,7 @@ class quit_module():
 		s.deriv_quit_folder = runner.get_deriv_folder("quit", "anat")
 		
 		s.sc_pre_str = "anat/{}".format(s.subj)
-		s.quit_complex_input = s.deriv_quit_folder + "/{}_run-1_desc_inv1and2_MP2RAGE".format(s.subj)
+		s.quit_complex_input = s.deriv_quit_folder + "/{}_run-1_desc-inv1and2_MP2RAGE".format(s.subj)
 	
 	def create_QUIT_nifti(s):
 		"""
@@ -166,12 +169,9 @@ class quit_module():
 			
 		"""
 		mp2rage_json_file = s.runner.code_path + "/mp2rage_parameters.json"
-		qi_cmd = "qi mp2rage {} < {}".format(s.quit_complex_input, mp2rage_json_file)
+		qi_cmd = "qi mp2rage {} < {}".format(s.quit_complex_input, mp2rage_json_file, no_log=True)
 		s.runner.sh_run(qi_cmd)
-		for out in ("UNI", "T1"):
-			src = "MP2_{}.nii.gz".format(out)
-			dest = s.deriv_quit_folder + "/{}_acq-mp2rage_run-1_{}.nii.gz".format(s.subj, out)
-			log_print(dest)
+		
 		dest = s.deriv_quit_folder + "/{}_run-1_desc-quit_UNIT1.nii.gz".format(s.subj)
 		os.rename("MP2_UNI.nii.gz", dest)
 		dest = s.deriv_quit_folder + "/{}_run-1_desc-quit_T1map.nii.gz".format(s.subj)

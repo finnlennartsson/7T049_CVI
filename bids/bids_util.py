@@ -232,3 +232,25 @@ def wildcard_delete(f_wc):
 			pass
 	log_print(str(f_ct) + " files deleted")
 	
+
+def find_subject(bids_root, subj):
+	"""
+	Make sure 
+	arguments:
+		- bids_root: bids directory with participants.tsv
+		- subj: subject to find 
+	returns True if found, else false
+	"""
+	part_tsv = "{}/participants.tsv".format(bids_root)
+	with open(part_tsv, 'r') as f:
+			for cur_part_line in f.readlines():
+				try:
+					subj_name, rest_line  = cur_part_line.split('\t', 1)
+					if(subj_name == subj):
+						#found
+						return True
+				except Exception as e:
+					#ignore non tab lines
+					pass
+	#not found
+	return False

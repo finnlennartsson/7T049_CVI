@@ -52,8 +52,8 @@ class pymp2rage_module():
 		cplx_2 = s.get_filename(2, "complex")
 
 		log_print("making split complex niftis")	
-		s.runner.sh_run("fslcomplex -complex",  real_1and2 + " " + imag_1and2, cplx_1, " 0 0")
-		s.runner.sh_run("fslcomplex -complex",  real_1and2 + " " + imag_1and2, cplx_2, " 1 1")
+		s.runner.sh_run("fslcomplex -complex",  real_1and2 + " " + imag_1and2, cplx_1, " 0 0", no_log=True)
+		s.runner.sh_run("fslcomplex -complex",  real_1and2 + " " + imag_1and2, cplx_2, " 1 1", no_log=True)
 
 		inv2_mag = s.get_filename(2, "mag")
 		inv2_phase = s.get_filename(2, "phase")
@@ -61,18 +61,18 @@ class pymp2rage_module():
 		log_print("getting magnitude and phase for inv 1")
 		inv1_mag = s.get_filename(1, "mag")
 		inv1_phase = s.get_filename(1, "phase")
-		s.runner.sh_run("fslcomplex -realpolar ", cplx_1, inv1_mag + " " + inv1_phase)
+		s.runner.sh_run("fslcomplex -realpolar ", cplx_1, inv1_mag + " " + inv1_phase, no_log=True)
 		
 		log_print("getting magnitude and phase for inv 2")
 		inv2_mag = s.get_filename(2, "mag")
 		inv2_phase = s.get_filename(2, "phase")
-		s.runner.sh_run("fslcomplex -realpolar ", cplx_2, inv2_mag + " " + inv2_phase)
+		s.runner.sh_run("fslcomplex -realpolar ", cplx_2, inv2_mag + " " + inv2_phase, no_log=True)
 
 		log_print("copying geometry to output files")
 		for f in (inv1_mag, inv1_phase):
-			s.runner.sh_run("fslcpgeom", cplx_1, f)
+			s.runner.sh_run("fslcpgeom", cplx_1, f, no_log=True)
 		for f in (inv2_mag, inv2_phase):
-			s.runner.sh_run("fslcpgeom", cplx_2, f)
+			s.runner.sh_run("fslcpgeom", cplx_2, f, no_log=True)
 
 	def make_pymp2rage(s):
 		"""

@@ -3,6 +3,6 @@ nibabel
 bids
 nilearn
 pymp2rage
-numpys
+numpy
 json
 pydicom
