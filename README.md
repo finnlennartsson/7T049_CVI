@@ -70,8 +70,8 @@ This package runs a number of external programs, executables and toolboxes that 
 
 - Python 3.7+ with the pip packages mentioned in `requirements.txt`
 - While most things in theory could be executed on windows, a modern Linux environment is assumed for most part since shell scripts are used. Also, file path names are not written in a portable fashion. 
-- Jurjen Heij's tools in the linescanning repo
-- FSL tools (https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Fslutils)
+- Jurjen Heij's tools in the [linescanning repo](https://github.com/gjheij/linescanning)
+- [FSL tools](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Fslutils)
 - MATLAB or MATLAB runtime 
 - SPM12 toolbox
 - CAT12 for SPM12, version r1450
