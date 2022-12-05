@@ -75,7 +75,7 @@ This package runs a number of external programs, executables and toolboxes that 
 - MATLAB or MATLAB runtime 
 - SPM12 toolbox
 - CAT12 for SPM12, version r1450
-- freesurfer
+- FreeSurfer
 - fMRIPREP (WIP)
 
 # Description of the BIDS errors that are fixed
